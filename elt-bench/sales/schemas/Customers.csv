@@ -1,5 +1,0 @@
-column_name,column_description
-CustomerID,the unique id of the customer
-FirstName,the customer's first name
-MiddleInitial,the customer's middle initial 
-LastName,the customer's last name

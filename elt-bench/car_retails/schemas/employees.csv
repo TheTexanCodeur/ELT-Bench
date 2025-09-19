@@ -1,9 +1,0 @@
-column_name,column_description
-employeeNumber,unique string ID of the employees
-lastName,last name of employees
-firstName,first name of employees
-extension,extension number
-email,email
-officeCode,office code of the employees
-reportsTo,represents for organization structure such as who reports to whom
-jobTitle,job title

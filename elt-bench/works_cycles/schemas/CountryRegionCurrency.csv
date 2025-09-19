@@ -1,4 +1,0 @@
-column_name,column_description
-countryregioncode,The id number identifying Country Region ISO standard code for countries and regions.
-currencycode,ISO standard currency code.
-modifieddate,Date and time the record was last updated. 

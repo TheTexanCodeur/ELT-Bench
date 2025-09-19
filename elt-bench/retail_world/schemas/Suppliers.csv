@@ -1,9 +1,0 @@
-column_name,column_description
-SupplierID,the unique id for suppliers
-SupplierName,the supplier name
-ContactName,the contact person's name representing the company
-Address,the address of the supplier
-City,the city where the supplier is located
-PostalCode,the postal code
-Country,the country
-Phone,the phone number

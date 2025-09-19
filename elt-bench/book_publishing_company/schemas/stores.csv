@@ -1,7 +1,0 @@
-column_name,column_description
-stor_id,unique id number of stores
-stor_name,
-stor_address,
-city,city name
-state,state code
-zip,zip code

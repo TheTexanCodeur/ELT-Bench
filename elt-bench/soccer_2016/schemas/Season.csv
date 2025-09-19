@@ -1,6 +1,0 @@
-column_name,column_description
-Season_Id,the unique id for season
-Man_of_the_Series,the player id of man of the series
-Orange_Cap,the player id who wins the orange cap
-Purple_Cap,the player id who wins the purple cap
-Season_Year,the year of the season

@@ -1,4 +1,0 @@
-column_name,column_description
-Venue_Id,the unique id of the venue
-Venue_Name,the name of the venue
-City_Id,the city id where the venue is located in 

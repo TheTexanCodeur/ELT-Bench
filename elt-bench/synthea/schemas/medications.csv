@@ -1,9 +1,0 @@
-column_name,column_description
-START,the start date of the care plan
-STOP,the stop date of the care plan
-PATIENT,the patient id
-ENCOUNTER,the medical encounter id
-CODE,the code of the medication
-DESCRIPTION,the description of the medication
-REASONCODE,the reason code
-REASONDESCRIPTION,the description of the reason why the patient take the medication

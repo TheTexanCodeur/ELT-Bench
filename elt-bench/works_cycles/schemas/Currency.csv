@@ -1,4 +1,0 @@
-column_name,column_description
-currencycode,The unique id string identifying the currency.
-name,Currency name.
-modifieddate,Date and time the record was last updated. 

@@ -1,4 +1,0 @@
-column_name,column_description
-ScrapReasonID,The unique number identifying for ScrapReason records.
-Name,Failure description.
-ModifiedDate,Date and time the record was last updated. 

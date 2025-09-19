@@ -1,9 +1,0 @@
-column_name,column_description
-Customer_ID,the id of the customers
-Customer_Name,the name of the customers
-Segment,the segment that the customers belong to
-Country,the country of people
-City,the city of people
-State,the state of people
-Postal_Code,the postal code
-Region,the region of people

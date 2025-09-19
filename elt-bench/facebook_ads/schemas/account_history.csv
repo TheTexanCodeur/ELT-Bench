@@ -1,4 +1,0 @@
-column_name,column_description
-id,The ID of the ad account.
-name,Name of the account.
-_fivetran_synced,When the record was last synced by Fivetran.

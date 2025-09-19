@@ -1,6 +1,0 @@
-column_name,column_description
-movieid,unique identifier number of movies
-year,year
-isEnglish,is English
-country,country
-runningtime,

@@ -1,7 +1,0 @@
-column_name,column_description
-Player_Id,the id of the player
-Player_Name,the name of the player
-DOB,player's birthday
-Batting_hand,the id of the batting hand
-Bowling_skill,the id of the bowling skill
-Country_Name,the name of the country where the player is from

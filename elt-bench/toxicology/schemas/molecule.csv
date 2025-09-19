@@ -1,3 +1,0 @@
-column_name,column_description
-molecule_id,unique id of molecule
-label,whether this molecule is carcinogenic or not

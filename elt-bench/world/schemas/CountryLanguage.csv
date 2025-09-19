@@ -1,5 +1,0 @@
-column_name,column_description
-CountryCode,The unique code for country 
-Language,Country language
-IsOfficial,Information on whether the language is official in a given country
-Percentage,Percentage of language use

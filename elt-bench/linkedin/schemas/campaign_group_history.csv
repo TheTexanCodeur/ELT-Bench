@@ -1,6 +1,0 @@
-column_name,column_description
-id,Unique internal ID representing the campaign group.
-last_modified_time,The timestamp of when the version was updated.
-account_id,The ID of the account the campaign group belongs to.
-created_time,The timestamp of when the campaign group was created.
-name,A label for the campaign group.

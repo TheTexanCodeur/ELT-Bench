@@ -1,9 +1,0 @@
-column_name,column_description
-year,year
-month,month
-date,day
-tmID,team abbreviated name
-oppID,Team ID of opponent
-R_P,regular / postseason
-IDgoalie1,ID of first goalie
-IDgoalie2,ID of second goalie

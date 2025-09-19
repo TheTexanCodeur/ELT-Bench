@@ -1,3 +1,0 @@
-column_name,column_description
-bank_transaction_id,Xero identifier for the bank transaction.
-contact_id,The ID of the associated contact in Xero

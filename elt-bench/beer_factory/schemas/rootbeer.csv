@@ -1,6 +1,0 @@
-column_name,column_description
-RootBeerID,the unique id for the root beer
-BrandID,the brand id
-ContainerType,the type of the container
-LocationID,the location id of the selling company 
-PurchaseDate,the purchase date of the root beer

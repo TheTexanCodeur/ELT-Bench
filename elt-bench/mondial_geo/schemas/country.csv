@@ -1,7 +1,0 @@
-column_name,column_description
-Name,the country name
-Code,country code
-Capital,"the name of the capital,"
-Province,"the province where the capital belongs to,"
-Area,"the total area,"
-Population,the population number.

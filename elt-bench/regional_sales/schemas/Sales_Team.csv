@@ -1,4 +1,0 @@
-column_name,column_description
-SalesTeamID,unique sales team id
-Sales_Team,sales team names
-Region,the region where the state is located in

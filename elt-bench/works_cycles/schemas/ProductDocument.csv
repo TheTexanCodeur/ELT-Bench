@@ -1,4 +1,0 @@
-column_name,column_description
-ProductID,The id number identifying the product.
-DocumentNode,The hierarchy id number identifying the Document node.
-ModifiedDate,Date and time the record was last updated. 

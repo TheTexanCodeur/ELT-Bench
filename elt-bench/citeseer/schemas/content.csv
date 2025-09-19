@@ -1,3 +1,0 @@
-column_name,column_description
-paper_id,unique string ID of the paper
-word_cited_id,rtype

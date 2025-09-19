@@ -1,8 +1,0 @@
-column_name,column_description
-IMG_ID,the id representing images
-OBJ_SAMPLE_ID,the id of the object sample
-OBJ_CLASS_ID,the id indicating class of the objects
-X,x coordinate 
-Y,y coordinate 
-W,width of the bounding box of the object
-H,height of the bounding box of the object

@@ -1,6 +1,0 @@
-column_name,column_description
-OrderID,the unique id for orders
-CustomerID,the unique id for customers
-EmployeeID,the unique id for employees
-OrderDate,the order date
-ShipperID,the id of the shipper

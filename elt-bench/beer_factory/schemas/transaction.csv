@@ -1,9 +1,0 @@
-column_name,column_description
-TransactionID,the unique id for the transaction
-CreditCardNumber,the number of the credit card used for payment
-CustomerID,the customer id
-TransactionDate,the transaction date
-CreditCardType,the credit card type
-LocationID,the location id of the selling company 
-RootBeerID,the root beer id
-PurchasePrice,the unit purchase price of the root beer

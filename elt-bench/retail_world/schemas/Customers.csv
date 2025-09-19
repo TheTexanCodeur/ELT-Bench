@@ -1,8 +1,0 @@
-column_name,column_description
-CustomerID,the unique id for customers
-CustomerName,the customer name
-ContactName,the contact person's name representing the company
-Address,the address of the customer
-City,the city where the customer is located
-PostalCode,the postal code
-Country,the country

@@ -1,4 +1,0 @@
-column_name,column_description
-ID,the id of the car
-model_year,year when the car model was introduced in the market
-country,country id to which the car belongs
