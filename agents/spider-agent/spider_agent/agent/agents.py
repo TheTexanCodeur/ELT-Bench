@@ -108,9 +108,10 @@ class PromptAgent:
             status, response, cost = call_llm({
                 "model": self.model,
                 "messages": messages,
-                "max_tokens": self.max_tokens,
-                "top_p": self.top_p,
-                "temperature": self.temperature
+                #"max_completion_tokens": self.max_tokens,
+                # "max_tokens": self.max_tokens,
+                #"top_p": self.top_p,
+                #"temperature": self.temperature
             })
             step_cost += cost
             response = response.strip()

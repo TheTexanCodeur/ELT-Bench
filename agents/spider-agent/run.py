@@ -57,9 +57,13 @@ def config() -> argparse.Namespace:
     parser.add_argument("--suffix", '-s', type=str, default="gpt-4-try1")
     
     parser.add_argument("--model", type=str, default="gpt-4o")
-    parser.add_argument("--temperature", type=float, default=0)
+    #parser.add_argument("--temperature", type=float, default=0)
+    parser.add_argument("--temperature", type=float, default=1)
     parser.add_argument("--top_p", type=float, default=0.9)
-    parser.add_argument("--max_tokens", type=int, default=2500)
+    # parser.add_argument("--max_tokens", type=int, default=2500)
+
+
+    
     parser.add_argument("--stop_token", type=str, default=None)
     
     # example config
@@ -83,7 +87,28 @@ def config() -> argparse.Namespace:
 
     return args
 
-
+def filter_databases(databases, example_index):
+    """Filter databases based on example_index parameter"""
+    if example_index == "all":
+        return databases
+    
+    if "," in example_index:
+        # Handle comma-separated indices like "2,3,5"
+        indices = [int(i.strip()) for i in example_index.split(",")]
+        return [databases[i] for i in indices if 0 <= i < len(databases)]
+    
+    if "-" in example_index:
+        # Handle range like "0-10"
+        start, end = map(int, example_index.split("-"))
+        return databases[start:end+1]
+    
+    # Handle single index
+    try:
+        index = int(example_index)
+        return [databases[index]] if 0 <= index < len(databases) else []
+    except ValueError:
+        logger.warning(f"Invalid example_index format: {example_index}")
+        return databases
 
 def test(
     args: argparse.Namespace,
@@ -106,21 +131,28 @@ def test(
     
     agent = PromptAgent(
         model=args.model,
-        max_tokens=args.max_tokens,
+        #max_tokens=args.max_tokens,
         top_p=args.top_p,
         temperature=args.temperature,
         max_memory_length=args.max_memory_length,
         max_steps=args.max_steps,
         use_plan=args.plan
     )
+    # databases = [f.name for f in os.scandir('../../elt-bench') if f.is_dir()]
+    # databases.sort()
+    
     databases = [f.name for f in os.scandir('../../elt-bench') if f.is_dir()]
     databases.sort()
+    databases = filter_databases(databases, args.example_index)
+    logger.info(f"Processing {len(databases)} databases: {databases}")
 
     for db in databases:
-        create_database(db)
+        #DO NOT DROP THE DATABASE (ALREADY MANUALLY LOADED IN SNOWFLAKE)
+        #create_database(db)
         task_config = {}
         task_config["instance_id"] = db
-        task_config["instruction"] = 'You are required to build an ELT pipeline by extracting data from multiple sources, such as custom APIs, Postgres, MongoDB, flat files and cloud service S3. The extracted data will be loaded into a target system, Snowflake, followed by writing transformation queries to construct final tables for downstream use.'
+        #task_config["instruction"] = 'You are required to build an ELT pipeline by extracting data from multiple sources, such as custom APIs, Postgres, MongoDB, flat files and cloud service S3. The extracted data will be loaded into a target system, Snowflake, followed by writing transformation queries to construct final tables for downstream use.'
+        task_config["instruction"] = 'Data has already been extracted from multiple sources (custom APIs, Postgres, MongoDB, flat files, and S3) and loaded into Snowflake via Airbyte. All source tables are now available in Snowflake. Your task is to focus ONLY on the transformation phase: write DBT transformation queries to construct the final tables for downstream use as defined in data_model.yaml. Do NOT modify Terraform configurations or trigger any Airbyte jobs.'
         instance_id = experiment_id +"/"+ db
         output_dir = os.path.join(args.output_dir, instance_id)
         result_json_path =os.path.join(output_dir, "elt/result.json")

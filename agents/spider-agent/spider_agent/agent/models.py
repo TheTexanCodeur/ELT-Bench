@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+from dotenv import load_dotenv
 import re
 import time
 from http import HTTPStatus
@@ -18,9 +19,12 @@ import tiktoken
 import signal
 from fireworks.client import Fireworks
 
+load_dotenv()  # reads .env
+
 logger = logging.getLogger("spider_agent")
 
 model_cost = {
+    "gpt-5": {"prompt_tokens_cost": 1.25 / 1000000, "completion_tokens_cost": 10 / 1000000, "cached": 0.125 / 1000000},
     "gpt-4o": {"prompt_tokens_cost": 2.5 / 1000000, "completion_tokens_cost": 10 / 1000000, "cached": 1.25 / 1000000},
     "gpt-4": {"prompt_tokens_cost": 30 / 1000000, "completion_tokens_cost": 60 / 1000000},
     "o1": {"prompt_tokens_cost": 15 / 1000000, "completion_tokens_cost": 60 / 1000000, "cached": 7.5 / 1000000},
@@ -50,6 +54,13 @@ def call_llm(payload):
             headers=headers,
             json=payload
         )
+        
+        # # 1️⃣ HTTP status code
+        # print("Status code:", response.status_code)
+
+        # # 2️⃣ Raw text of the response
+        # print("Raw response text:", response.text)
+        
         output_message = response.json()['choices'][0]['message']['content']
         cached_tokens = response.json(
         )['usage']['prompt_tokens_details']['cached_tokens']
