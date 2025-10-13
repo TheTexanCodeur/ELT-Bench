@@ -1,5 +1,8 @@
-*.log
 *.DS_Store
 *.csv
 *.jsonl
 *.sh
+*.log
+*.vscode
+agents/spider-agent/output/*
+*.env

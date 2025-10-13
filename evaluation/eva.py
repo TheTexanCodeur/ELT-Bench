@@ -19,5 +19,5 @@ args = parser.parse_args()
 
 os.makedirs(f'./agent_results/{args.folder}', exist_ok=True)
 
-evaluate_stage1(args.folder, args.example_index, SNOWFLAKE_CONFIG)
-evaluate_stage2(args.folder, SNOWFLAKE_CONFIG)
+#evaluate_stage1(args.folder, args.example_index, SNOWFLAKE_CONFIG)
+evaluate_stage2(args.folder, args.example_index, SNOWFLAKE_CONFIG)

@@ -47,14 +47,40 @@ def verify_tables(db, snowflake_config):
   tables = [x[0] for x in result]
   return tables
 
+def filter_databases(databases, example_index):
+    """Filter databases based on example_index parameter"""
+    if example_index == "all":
+        return databases
+    
+    if "," in example_index:
+        # Handle comma-separated indices like "2,3,5"
+        indices = [int(i.strip()) for i in example_index.split(",")]
+        return [databases[i] for i in indices if 0 <= i < len(databases)]
+    
+    if "-" in example_index:
+        # Handle range like "0-10"
+        start, end = map(int, example_index.split("-"))
+        return databases[start:end+1]
+    
+    # Handle single index
+    try:
+        index = int(example_index)
+        return [databases[index]] if 0 <= index < len(databases) else []
+    except ValueError:
+        return databases
 
-def evaluate_stage1(folder, snowflake_config):
+
+def evaluate_stage1(folder, example_index, snowflake_config):
   log_file = f'./agent_results/{folder}/results.log'
   with open('./table.json', 'r') as f:
       table_list = json.load(f)
 
+  # databases = [f.name for f in os.scandir('../elt-bench') if f.is_dir()]
+  # databases.sort()
+  
   databases = [f.name for f in os.scandir('../elt-bench') if f.is_dir()]
   databases.sort()
+  databases = filter_databases(databases, example_index)
 
   for db in databases:
       success_tables = []
