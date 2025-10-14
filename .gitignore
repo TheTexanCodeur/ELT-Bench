@@ -7,3 +7,4 @@
 agents/spider-agent/output/*
 *.env
 *.zip
+setup/airbyte/airbyte_credential.json
