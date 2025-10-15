@@ -39,8 +39,10 @@ After successful installation, you can confirm the installation by running:
 
 ### Set up data destination - Snowflake
 - Refer to the example in `./setup/destination/setup.sql`. Copy all the contents into a Snowflake worksheet and execute "Run all" to create the necessary credentials.
+NOTE: No need to do this if the setup has already been done.
 
 - Fill in the required values in `./setup/destination/snowflake_credential` to ensure Airbyte can successfully connect to Snowflake.
+NOTE: use role "AIRBYTE_ROLE" and not "SYSADMIN"
 
 ### Run ELT setup
 - Execute the script to create Docker containers for various sources, download both source data and ground truth results for evaluation, and insert the data.

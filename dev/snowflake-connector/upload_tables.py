@@ -1,8 +1,33 @@
 import snowflake.connector
 import os
+import argparse
 import shutil
 import yaml
 import requests
+import json
+from pathlib import Path
+import unicodedata
+
+# Get current working directory (you said you're at "ELT-BENCH" level)
+base_path = Path.cwd()
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--example_index", "-i", type=str, default="all", help="index range of the examples to run, e.g., '0-10', '2,3', 'all'")
+args = parser.parse_args()
+
+
+def select_tables(example_index):
+    if "-" in example_index:
+        # Handle range like "0-10"
+        start, end = map(int, example_index.split("-"))
+        return start, end + 1
+
+
+def read_json(file_path):
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    return data
+
 
 def load_flat_files(db_name):
     folder_path = f"./elt-bench/{db_name}"
@@ -47,14 +72,23 @@ def load_flat_files(db_name):
         
     #DB data
     for file in os.listdir(data_dir):
-        file_path = f"file:///Users/quentinsandoz/Repos/ELT-Bench/elt-bench/{db_name}/data/{file}"
         
+        # Build the path
+        file_path = base_path / "elt-bench" / db_name / "data" / file
+
+        # Normalize Unicode (so é is handled correctly)
+        normalized_path = unicodedata.normalize("NFC", str(file_path.resolve()))
+
+        # Manually add the file:// prefix (DO NOT percent-encode)
+        file_uri = f"file://{normalized_path}"
+                
+    
         file_info = file.split(".")
         file_name = file_info[0]
         file_type = file_info[1]
         
         conn.cursor().execute("REMOVE @loading_stage")
-        conn.cursor().execute(f"PUT {file_path} @loading_stage")
+        conn.cursor().execute(f"PUT {file_uri} @loading_stage")
         
         file_format = file_type_dict.get(file_type)
         
@@ -87,21 +121,19 @@ def load_flat_files(db_name):
         print(f"Finished loading file {file_name}", flush=True)
     
     shutil.rmtree(data_dir)
-    
-    
-conn = snowflake.connector.connect(
-    user="AIRBYTE_USER",
-    role="AIRBYTE_ROLE",
-    password="Snowflake@123",
-    account="yj06639.eu-central-2.aws",
-    warehouse="AIRBYTE_WAREHOUSE"
-    )
 
+file_path = './setup/destination/snowflake_credential.json' 
+snowflake_config = read_json(file_path)   
+
+conn = snowflake.connector.connect(**snowflake_config) 
+    
 file_type_dict = {"csv": "CSV_TYPE", "jsonl": "JSON_TYPE", "parquet": "PARQUET_TYPE"}
 
 names = sorted(os.listdir("./elt-bench"))
 
-for folder_name in names[10:11]:
+start, end = select_tables(args.example_index)
+
+for folder_name in names[start:end]:
         
     folder_path = f"./setup/data/{folder_name}"
     
@@ -130,7 +162,19 @@ for folder_name in names[10:11]:
 
         #DB data
         for file in os.listdir(folder_path):
-            file_path = f"file:///Users/quentinsandoz/Repos/ELT-Bench/setup/data/{folder_name}/{file}"
+            
+            # Build the path dynamically
+            file_path = base_path / "setup" / "data" / folder_name / file
+            
+            # Normalize the entire path (base + subfolders + filename)
+            normalized_path = unicodedata.normalize("NFC", str(file_path))
+            
+            # Convert to file:// URI
+            file_uri = Path(normalized_path).resolve().as_uri()
+
+            #file_path = f"file:///Users/quentinsandoz/Repos/ELT-Bench/setup/data/{folder_name}/{file}"
+            
+            file_path = file_uri
             
             file_info = file.split(".")
             file_name = file_info[0]
@@ -175,7 +219,20 @@ for folder_name in names[10:11]:
         
         #API Data
         for file in os.listdir(folder_path):
-            file_path = f"file:///Users/quentinsandoz/Repos/ELT-Bench/elt-docker/rest_api/data/{folder_name}/{file}"
+            
+            # Build the path dynamically
+            file_path = base_path / "elt-docker" / "rest_api" / "data" / folder_name / file
+
+            
+            # Normalize the entire path (base + subfolders + filename)
+            normalized_path = unicodedata.normalize("NFC", str(file_path))
+        
+            # Convert to file:// URI
+            file_uri = Path(normalized_path).resolve().as_uri()
+            
+            file_path = file_uri
+
+            #file_path = f"file:///Users/quentinsandoz/Repos/ELT-Bench/elt-docker/rest_api/data/{folder_name}/{file}"
             
             file_info = file.split(".")
             file_name = file_info[0]
