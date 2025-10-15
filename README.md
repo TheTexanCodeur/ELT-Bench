@@ -68,7 +68,7 @@ NOTE: the range includes both ends, so 0-4 means examples 0, 1, 2, 3, and 4.
 
   ```bash
   cd evaluation
-  python eva.py --folder folder_name
+  python eva.py --folder folder_name --example_index 0-4
   ```
-
+  
   Replace folder_name with your desired name for the evaluation results. The newly created folder with the results will be located at `./evaluation/agent_results`.
