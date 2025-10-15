@@ -13,10 +13,10 @@ export FIREWORKS_API_KEY=your_fireworks_api_key
 ```
 ### Running experiments
 ```
-python run.py --suffix eltbench --model model_name
+python run.py --suffix eltbench --model model_name --example_index 0-4
 ```
 
-Model options: ['gpt-4o', 'accounts/fireworks/models/llama-v3p1-405b-instruct', 'accounts/fireworks/models/qwen2p5-coder-32b-instruct', 'accounts/fireworks/models/deepseek-r1', 'claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022']
+Model options: ['gpt-5', 'gpt-4o', 'accounts/fireworks/models/llama-v3p1-405b-instruct', 'accounts/fireworks/models/qwen2p5-coder-32b-instruct', 'accounts/fireworks/models/deepseek-r1', 'claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022']
 ## 🚀 Quickstart
 
 ### Setup
@@ -49,7 +49,7 @@ export GEMINI_API_KEY=your_genmini_api_key
 
 ```python
 python run.py --suffix <The name of this experiment>
-python run.py --model gpt-4o --suffix test1
+python run.py --model gpt-5 --suffix test1 --example_index 0-4
 ```
 
 

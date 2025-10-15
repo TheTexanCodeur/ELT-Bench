@@ -14,9 +14,10 @@ unzip data_api.zip -d ../elt-docker/rest_api
 unzip data_db.zip -d ./
 unzip gt.zip -d ../evaluation
 
+cd ../elt-docker
+docker compose up -d
+
 ###NOT NECESSARY FOR THE EL STAGE###
-#cd ../elt-docker
-#docker compose up -d
 #docker network connect elt-docker_elt_network airbyte-abctl-control-plane
 
 cd ../setup
