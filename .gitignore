@@ -1,10 +1,10 @@
 *.DS_Store
-*.csv
-*.jsonl
-*.sh
 *.log
 *.vscode
 agents/spider-agent/output/*
 *.env
 *.zip
-setup/airbyte/airbyte_credential.json
+inputs/*
+setup/data/*
+elt-docker/rest_api/data/*
+evaluation/gt/*
