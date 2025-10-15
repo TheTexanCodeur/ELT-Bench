@@ -48,6 +48,7 @@ After successful installation, you can confirm the installation by running:
   cd ./setup
   bash elt_setup.sh
   ```
+- The conda env commands need to be executed directly in the terminal. Not all the commands need to be executed if you only focus on the transform stage. Read the script for more details.
 
 ## Running agents
 - To evaluate the Spider-Agent and SWE-agent on ELT-Bench, follow the instructions in the `agents` folder. This folder contains detailed steps for running each agent.
