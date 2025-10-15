@@ -78,17 +78,18 @@ def load_flat_files(db_name):
 
         # Normalize Unicode (so é is handled correctly)
         normalized_path = unicodedata.normalize("NFC", str(file_path.resolve()))
-
-        # Manually add the file:// prefix (DO NOT percent-encode)
-        file_uri = f"file://{normalized_path}"
-                
+        
+        # Convert to file:// URI
+        file_uri = Path(normalized_path).resolve().as_uri()
+        
+        file_path = file_uri
     
         file_info = file.split(".")
         file_name = file_info[0]
         file_type = file_info[1]
         
         conn.cursor().execute("REMOVE @loading_stage")
-        conn.cursor().execute(f"PUT {file_uri} @loading_stage")
+        conn.cursor().execute(f"PUT {file_path} @loading_stage")
         
         file_format = file_type_dict.get(file_type)
         
@@ -108,7 +109,7 @@ def load_flat_files(db_name):
             old_name = col[0]
             new_name = old_name.upper()
             if old_name != new_name:
-                conn.cursor().execute(f'ALTER TABLE {file_name} RENAME COLUMN "{old_name}" TO {new_name}')
+                conn.cursor().execute(f'ALTER TABLE {file_name} RENAME COLUMN "{old_name}" TO "{new_name}"')
         
         conn.cursor().execute(
         f"COPY INTO {file_name} "
@@ -201,7 +202,7 @@ for folder_name in names[start:end]:
                 old_name = col[0]
                 new_name = old_name.upper()
                 if old_name != new_name:
-                    conn.cursor().execute(f'ALTER TABLE {file_name} RENAME COLUMN "{old_name}" TO {new_name}')
+                    conn.cursor().execute(f'ALTER TABLE {file_name} RENAME COLUMN "{old_name}" TO "{new_name}"')
             
             conn.cursor().execute(
             f"COPY INTO {file_name} "
@@ -259,7 +260,7 @@ for folder_name in names[start:end]:
                 old_name = col[0]
                 new_name = old_name.upper()
                 if old_name != new_name:
-                    conn.cursor().execute(f'ALTER TABLE {file_name} RENAME COLUMN "{old_name}" TO {new_name}')
+                    conn.cursor().execute(f'ALTER TABLE {file_name} RENAME COLUMN "{old_name}" TO "{new_name}"')
             
             conn.cursor().execute(
             f"COPY INTO {file_name} "
