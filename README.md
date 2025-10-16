@@ -3,7 +3,7 @@ The first comprehensive, end-to-end benchmark designed to evaluate AI agents in 
 ![ELT](https://anonymous.4open.science/r/ELT-Bench-B51C/materials/elt.svg)
 ## Environment Setup
 
-### Install Docker (not required if transform step only) and Conda 
+### Install Docker and Conda 
 - Ensure your machine has the [Docker environment](https://docs.docker.com/get-docker/) and the [Conda environment](https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html) installed.
 
 ### Install Airbyte (not required if transform step only)
