@@ -31,7 +31,7 @@ RUN pip install dbt-snowflake psycopg2-binary
 
 RUN apt-get update && apt-get install -y \
     gnupg \
-    software-properties-common \
+    # software-properties-common \
     wget \
     lsb-release
 
