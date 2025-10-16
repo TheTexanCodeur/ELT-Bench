@@ -24,7 +24,8 @@ load_dotenv()  # reads .env
 logger = logging.getLogger("spider_agent")
 
 model_cost = {
-    "gpt-5": {"prompt_tokens_cost": 1.25 / 1000000, "completion_tokens_cost": 10 / 1000000, "cached": 0.125 / 1000000},
+    "gpt-5": {"prompt_tokens_cost": 1.25 / 1000000, "completion_tokens_cost": 10 / 1000000, "cached": 0.13 / 1000000},
+    "gpt-5-mini": {"prompt_tokens_cost": 0.25 / 1000000, "completion_tokens_cost": 2 / 1000000, "cached": 0.03 / 1000000},
     "gpt-4o": {"prompt_tokens_cost": 2.5 / 1000000, "completion_tokens_cost": 10 / 1000000, "cached": 1.25 / 1000000},
     "gpt-4": {"prompt_tokens_cost": 30 / 1000000, "completion_tokens_cost": 60 / 1000000},
     "o1": {"prompt_tokens_cost": 15 / 1000000, "completion_tokens_cost": 60 / 1000000, "cached": 7.5 / 1000000},
