@@ -52,23 +52,23 @@ NOTE: use role "AIRBYTE_ROLE" and not "SYSADMIN"
   ```
 - The conda env commands need to be executed directly in the terminal. Not all the commands need to be executed if you only focus on the transform stage. Read the script for more details.
 
-### Load tables to Snowflake
+### Upload tables to Snowflake
 - Run the following script from the root of the project to load the data into Snowflake: 
   ```bash
   python3 dev/snowflake-connector/upload_tables.py --example_index 0-4
   ```
-NOTE: the range includes both ends, so 0-4 means examples 0, 1, 2, 3, and 4.
+NOTE: the range includes both ends, so 0-4 means examples 0, 1, 2, 3, and 4. To upload all the tables, use 0-99.
 
 ## Running agents
 - To evaluate the Spider-Agent and SWE-agent on ELT-Bench, follow the instructions in the `agents` folder. This folder contains detailed steps for running each agent.
 
 ## Evaluation
 
-- To evaluate the performance of an agent, use the following commands:
+- To evaluate the performance of an agent, use the following commands from the root of the project:
 
   ```bash
   cd evaluation
-  python eva.py --folder folder_name --example_index 0-4
+  python eva.py --folder <folder_name> --example_index 0-4
   ```
-  
-  Replace folder_name with your desired name for the evaluation results. The newly created folder with the results will be located at `./evaluation/agent_results`.
+
+  Replace `<folder_name>` with your desired name for the evaluation results. The newly created folder with the results will be located at `./evaluation/agent_results`.
