@@ -1,0 +1,5 @@
+column_name,column_description
+DepartmentID,The unique id number identifying the department.
+Name,Name of the department.
+GroupName,Name of the group to which the department belongs.
+ModifiedDate,Date and time the record was last updated. 

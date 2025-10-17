@@ -1,0 +1,4 @@
+column_name,column_description
+Country,a country code
+Continent,the continent name.
+Percentage,how much of the area of a country belongs to the continent

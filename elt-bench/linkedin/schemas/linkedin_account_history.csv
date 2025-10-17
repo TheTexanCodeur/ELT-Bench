@@ -1,0 +1,7 @@
+column_name,column_description
+id,Unique internal ID representing the account.
+last_modified_time,The timestamp of when the version was updated.
+created_time,The timestamp of when the account was created.
+name,A label for the account.
+currency,"The ISO 4217 currency code of the account, such as 'USD' for United States Dollar (default)."
+version_tag,An integer representation of the version of the account.

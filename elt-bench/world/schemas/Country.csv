@@ -1,0 +1,16 @@
+column_name,column_description
+Code,the unique country code of the country
+Name,the country name
+Continent,the continent that the country locates
+Region,the region that the country locates
+SurfaceArea,the surface area of the country
+IndepYear,the year that the country declared independence 
+Population,the number of the population in the area
+LifeExpectancy,the life expectancy at birth of the country
+GNP,the GNP of the country
+GNPOld,Gross national product - old value.
+LocalName,The country's local name
+GovernmentForm,The country's goverment form.
+HeadOfState,The head of state full name.
+Capital,The country's capital 
+Code2,The second country code.

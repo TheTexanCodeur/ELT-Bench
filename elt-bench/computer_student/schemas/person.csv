@@ -1,0 +1,7 @@
+column_name,column_description
+p_id,the unique number identifying each person
+professor,whether the person is a professor
+student,whether the person is a student
+hasPosition,whether the person has a position in the faculty
+inPhase,the phase of qualification the person is undergoing
+yearsInProgram,the year of the program the person is at

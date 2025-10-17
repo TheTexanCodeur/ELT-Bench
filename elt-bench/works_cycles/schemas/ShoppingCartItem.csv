@@ -1,0 +1,7 @@
+column_name,column_description
+ShoppingCartItemID,The unique id number identifying the shopping cart item records.
+ShoppingCartID,Shopping cart identification number.
+Quantity,Product quantity ordered.
+ProductID,Product ordered.
+DateCreated,Date the time the record was created. 
+ModifiedDate,Date and time the record was last updated. 

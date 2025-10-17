@@ -1,0 +1,14 @@
+column_name,column_description
+_fivetran_synced,The timestamp of when a record was last synced by Fivetran.
+id,Pardot ID for this visitor activity
+prospect_id,Pardot ID for the associated prospect
+visitor_id,Pardot ID for the associated visitor
+opportunity_id,ID of the related opportunity
+type,Visitor activity's type number; See listing below
+type_name,Visitor activity's type name; See listing below
+details,"Details about this visitor activity such as the name of the object associated with this activity, the search phrase used in a site search query, etc."
+email_id,Pardot ID of the email associated with this visitor activity
+email_template_id,Pardot ID of the email template associated with this visitor activity
+list_email_id,Pardot ID of the list email associated with this visitor activity
+campaign_id,ID of the related campaign.
+created_at,Time that visitor activity occurred

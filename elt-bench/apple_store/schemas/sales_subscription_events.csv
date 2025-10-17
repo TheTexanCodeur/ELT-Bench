@@ -1,0 +1,31 @@
+column_name,column_description
+event_date,The date of the report and respective recorded metric(s); follows the format `YYYY-MM-DD`.
+account_number,Sales Account ID associated with the app name or app ID.
+app_name,"Sales Account Name associated with the Sales Account ID, app name or app ID."
+subscription_name,The subscription name associated with the subscription event metric or subscription summary metric.
+event,The subscription event associated with the respective metric(s).
+country,The country associated with the subscription event metrics and subscription summary metric(s). This country code maps to ISO-3166 Alpha-2.
+state,The state associated with the subscription event metrics or subscription summary metrics.
+device,Device type associated with the respective metric(s).
+quantity,The number of occurrences of a given subscription event.
+_fivetran_synced,Timestamp of when Fivetran synced a record.
+PROCEEDS_REASON,
+SUBSCRIPTION_GROUP_ID,
+PROMOTIONAL_OFFER_ID,
+_FILENAME,
+PREVIOUS_SUBSCRIPTION_APPLE_ID,
+CONSECUTIVE_PAID_PERIODS,
+STANDARD_SUBSCRIPTION_DURATION,
+VENDOR_NUMBER,
+PREVIOUS_SUBSCRIPTION_NAME,
+PROMOTIONAL_OFFER_NAME,
+SUBSCRIPTION_APPLE_ID,
+APP_APPLE_ID,
+DAYS_BEFORE_CANCELING,
+CANCELLATION_REASON,
+SUBSCRIPTION_OFFER_TYPE,
+_INDEX,
+ORIGINAL_START_DATE,
+DAYS_CANCELED,
+SUBSCRIPTION_OFFER_DURATION,
+MARKETING_OPT_IN_DURATION,

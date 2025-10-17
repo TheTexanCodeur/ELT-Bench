@@ -1,0 +1,5 @@
+column_name,column_description
+IMG_ID,the image id 
+PRED_CLASS_ID,the prediction relationship class between objects
+OBJ1_SAMPLE_ID,the sample id of the first object
+OBJ2_SAMPLE_ID,the sample id of the second object

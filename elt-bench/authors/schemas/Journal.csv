@@ -1,0 +1,5 @@
+column_name,column_description
+Id,Journal Id
+ShortName,Short name
+FullName,Full name
+HomePage,Homepage URL of journal

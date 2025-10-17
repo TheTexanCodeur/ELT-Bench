@@ -1,0 +1,3 @@
+column_name,column_description
+OBJ_CLASS_ID,unique id number identifying object classes
+OBJ_CLASS,the explanation about object classes

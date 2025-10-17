@@ -1,0 +1,10 @@
+column_name,column_description
+officeCode,unique ID of the office
+city,
+phone,phone number
+addressLine1,addressLine1
+addressLine2,addressLine2
+state,
+country,country
+postalCode,postalCode
+territory,territory

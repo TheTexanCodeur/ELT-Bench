@@ -1,0 +1,10 @@
+column_name,column_description
+GeneID,identifier number of genes
+Essential,essential 
+Class,class
+Complex,Complex
+Phenotype,Phenotype
+Motif,Motif
+Chromosome,Chromosome
+Function,Function
+Localization,

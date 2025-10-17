@@ -1,0 +1,3 @@
+column_name,column_description
+ID,unique ID for each car 
+price,price of the car in USD

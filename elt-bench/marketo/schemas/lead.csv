@@ -1,0 +1,7 @@
+column_name,column_description
+id,Unique integer id of a lead record.
+created_at,The timestamp each lead object was created at.
+updated_at,The timestamp each lead object was last updated at.
+email,The email address of the lead.
+first_name,The first name of the lead.
+last_name,The last name of the lead.

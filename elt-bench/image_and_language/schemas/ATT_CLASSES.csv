@@ -1,0 +1,3 @@
+column_name,column_description
+ATT_CLASS_ID,the unique attribute class ids
+ATT_CLASS,the corresponding classes for attributes

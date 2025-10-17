@@ -1,0 +1,7 @@
+column_name,column_description
+BusinessEntityID,The sales representative.
+TerritoryID,Territory identification number.
+StartDate,Date the sales representive started work in the territory.
+EndDate,Date the sales representative left work in the territory.
+rowguid,Uniquely identifying the record. Used to support a merge replication sample. 
+ModifiedDate,Date and time the record was last updated. 

@@ -1,0 +1,6 @@
+column_name,column_description
+LocationID,unique id of the location
+Country,the country
+State,the state
+StateCode,state code
+City,the city

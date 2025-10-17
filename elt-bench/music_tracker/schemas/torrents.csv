@@ -1,0 +1,8 @@
+column_name,column_description
+groupName,release title
+totalSnatched,number of times the release has been downloaded
+artist,artist / group name
+groupYear,release year
+releaseType,"release type (e.g., album, single, mixtape)"
+groupId,Unique release identifier from What.CD. Used to ensure no releases are duplicates.
+id,unique identifier (essentially an index)

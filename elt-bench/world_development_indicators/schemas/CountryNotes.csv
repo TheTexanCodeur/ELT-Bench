@@ -1,0 +1,4 @@
+column_name,column_description
+Countrycode,code identifying unique countries
+Seriescode,Series code of countries
+Description,description

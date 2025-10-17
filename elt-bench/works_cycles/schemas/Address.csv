@@ -1,0 +1,10 @@
+column_name,column_description
+AddressID,Unique id number identifying the address.
+AddressLine1,First street address line.
+AddressLine2,Second street address line.
+City,Name of the city.
+StateProvinceID,Identification number for the state or province. 
+PostalCode,Postal code for the street address.
+SpatialLocation,Latitude and longitude of this address.
+rowguid,Uniquely identifying the record. Used to support a merge replication sample. 
+ModifiedDate,Date and time the record was last updated. 

@@ -1,0 +1,6 @@
+column_name,column_description
+Product_ID,the id of products
+Product_Name,the name of products
+Category,the categories of products
+Sub_Category,the sub-categories of products
+Region,the region of products

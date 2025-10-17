@@ -1,0 +1,7 @@
+column_name,column_description
+Id, Id of the paper
+Title,Title of the paper
+Year,Year of the paper
+ConferenceId,Conference Id in which paper was published
+JournalId,Journal Id in which paper was published
+Keyword,Keywords of the paper 

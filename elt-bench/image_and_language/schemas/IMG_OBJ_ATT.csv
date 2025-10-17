@@ -1,0 +1,4 @@
+column_name,column_description
+IMG_ID,id number of each image
+ATT_CLASS_ID,attribute class number for image
+OBJ_SAMPLE_ID,object sample id

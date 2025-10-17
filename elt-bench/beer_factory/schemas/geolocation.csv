@@ -1,0 +1,4 @@
+column_name,column_description
+LocationID,the id of the location
+Latitude,the latitude of the location
+Longitude,the longitude of the location

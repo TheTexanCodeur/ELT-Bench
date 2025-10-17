@@ -1,0 +1,8 @@
+column_name,column_description
+ID,the unique id of the claim
+PATIENT,the patient id
+BILLABLEPERIOD,the start date of the billable
+ORGANIZATION,the claim organization
+ENCOUNTER,the medical encounter id
+DIAGNOSIS,the diagnosis
+TOTAL,the length of the billable period

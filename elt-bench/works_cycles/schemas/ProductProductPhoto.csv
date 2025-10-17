@@ -1,0 +1,5 @@
+column_name,column_description
+ProductID,Product identification number.
+ProductPhotoID,Product photo identification number.
+Primary,Whether this photo is the principal image or not.
+ModifiedDate,

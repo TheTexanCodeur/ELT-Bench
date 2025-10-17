@@ -1,0 +1,7 @@
+column_name,column_description
+ProductPhotoID,unique id number identifying the products
+ThumbNailPhoto,Small image of the product.
+ThumbnailPhotoFileName,Small image file name
+LargePhoto,Large image of the product.
+LargePhotoFileName,Large image file name.
+ModifiedDate,Date and time the record was last updated.

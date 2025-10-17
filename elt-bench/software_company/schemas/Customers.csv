@@ -1,0 +1,8 @@
+column_name,column_description
+ID,the unique number identifying the customer
+SEX,the sex of the customer
+MARITAL_STATUS,
+GEOID,geographic identifier
+EDUCATIONNUM,the level of education
+OCCUPATION,occupation of customers
+age,age of customers

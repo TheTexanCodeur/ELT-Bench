@@ -1,0 +1,31 @@
+column_name,column_description
+year,year
+lgid,league ID number
+tmid,team ID
+hw,home wins
+hl,home loses
+ht,home ties
+rw,Road wins
+rl,Road loses
+rt,Road ties
+octw,October wins
+octl,October loses
+octt,October ties
+novw,November wins
+novl,November loses
+novt,November ties
+decw,December wins
+decl,December loses
+dect,December ties
+janw,January wins
+janl,January loses
+jant,January ties
+febw,February wins
+febl,February loses
+febt,February ties
+marw,March wins
+marl,March loses
+mart,March ties
+aprw,April wins
+aprl,April loses
+aprt,April ties

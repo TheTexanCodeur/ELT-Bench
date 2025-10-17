@@ -1,0 +1,8 @@
+column_name,column_description
+ID,the unique id of the encounter
+DATE,the date of the encounter
+PATIENT,the patient id
+CODE,the code of the care plan 
+DESCRIPTION,the description of the care plan
+REASONCODE,the reason code
+REASONDESCRIPTION,the description of the reason why the patient needs the care plan

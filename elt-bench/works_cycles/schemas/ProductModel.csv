@@ -1,0 +1,7 @@
+column_name,column_description
+ProductModelID,The unique id number identifying the product model.
+Name,Product model description.
+CatalogDescription,Detailed product catalog information in xml format.
+Instructions,Manufacturing instructions in xml format.
+rowguid,Uniquely identifying the record. Used to support a merge replication sample. 
+ModifiedDate,Date and time the record was last updated. 

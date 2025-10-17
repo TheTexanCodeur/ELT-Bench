@@ -1,0 +1,32 @@
+column_name,column_description
+playerID,id number identifying the player
+coachID,coach id number
+hofID,hall of fame id
+firstName,first name
+lastName,last name
+nameNote,note about name
+nameGiven,Given name
+nameNick,Nickname 
+height,height
+weight,weight
+shootCatch,Shooting hand (or catching hand for goalies)
+legendsID,ID at Legends Of Hockey
+ihdbID,ID at the Internet Hockey Database
+hrefID,ID at Hockey-Reference.com
+firstNHL,First NHL season
+lastNHL,Last NHL season
+firstWHA,First WHA season
+lastWHA,Last WHA season
+pos,
+birthYear,birth Year
+birthMon,birth Month
+birthDay,birth Day
+birthCountry,birth Country
+birthState,birth State
+birthCity,birth city
+deathYear,death year
+deathMon,death month
+deathDay,death day
+deathCountry,death country
+deathState,death state
+deathCity,death city
