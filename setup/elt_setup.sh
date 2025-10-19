@@ -12,7 +12,7 @@ gdown 'https://drive.google.com/uc?id=11vQqNEWXoPG6sjKytAn7TtFLDMiQa17I'
 #Unzip the data used in the benchmark
 unzip data_api.zip -d ../elt-docker/rest_api
 unzip data_db.zip -d ./
-unzip gt.zip -d ../evaluation
+unzip gt.zip -d ../ground_truth
 
 cd ../elt-docker
 docker compose up -d
