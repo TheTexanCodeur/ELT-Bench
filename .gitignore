@@ -10,4 +10,4 @@ inputs/*
 setup/data/*
 elt-docker/rest_api/data/*
 ground_truth/*
-evaluation/agent_results/*
+results/*

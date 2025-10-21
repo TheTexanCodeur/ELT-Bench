@@ -50,7 +50,7 @@ def check_corretness(df_gt, df):
         else:
             missed_cols.append(gold_col)
 
-    with open(f'./agent_results/{args.folder}/stage2.log', 'a') as f:
+    with open(f'../results/{args.folder}/stage2.log', 'a') as f:
         f.write(f"Matched columns: {matched_cols}\n")
         f.write(f"Unmatched columns: {unmatched_cols}\n")
         f.write(f"Missed: {missed_cols}\n\n\n")
@@ -79,7 +79,7 @@ def filter_databases(databases, example_index):
 
 def evaluate_stage2(folder, example_index, snowflake_config):
     # databases = []
-    # with open(f'./agent_results/{folder}/results.log', 'r') as f:
+    # with open(f'../results/{folder}/results.log', 'r') as f:
     #     for line in f:
     #         s = line.split(' ')
     #         if s[0] == 'Success:':
@@ -91,25 +91,25 @@ def evaluate_stage2(folder, example_index, snowflake_config):
                     
     for db in databases:
         tables = [f.name for f in os.scandir(f'./{db}') if f.is_file() and f.name.endswith('.sql')]
-        with open(f'./agent_results/{folder}/stage2.log', 'a') as f:
+        with open(f'../results/{folder}/stage2.log', 'a') as f:
             f.write(f'Database: {db}\n')
             
         for table in tables:
             table = table.split('.')[0]
-            with open(f'./agent_results/{folder}/stage2.log', 'a') as f:
+            with open(f'../results/{folder}/stage2.log', 'a') as f:
                 f.write(f'Table: {table}\n')
             try:
-                if not os.path.exists(f'./agent_results/{folder}/{db}/{table}.csv'):       
+                if not os.path.exists(f'../results/{folder}/{db}/{table}.csv'):       
                     conn = snowflake.connector.connect(**snowflake_config)
                     with open(f'./{db}/{table}.sql', 'r') as f:
                         query = f.read()
                     df = pd.read_sql(query, conn)
-                    os.makedirs(f'./agent_results/{folder}/{db}', exist_ok=True)
-                    df.to_csv(f'./agent_results/{folder}/{db}/{table}.csv', index=False)
+                    os.makedirs(f'../results/{folder}/{db}', exist_ok=True)
+                    df.to_csv(f'../results/{folder}/{db}/{table}.csv', index=False)
                     conn.close()
-                df = pd.read_csv(f'./agent_results/{folder}/{db}/{table}.csv')
+                df = pd.read_csv(f'../results/{folder}/{db}/{table}.csv')
                 df_gt = pd.read_csv(f'../ground_truth/{db}/{table}.csv')
                 check_corretness(df_gt, df)
             except Exception as e:
-                with open(f'./agent_results/{folder}/stage2.log', 'a') as f:
+                with open(f'../results/{folder}/stage2.log', 'a') as f:
                     f.write(f'Error: {e}\n\n\n')

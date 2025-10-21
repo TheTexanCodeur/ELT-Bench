@@ -102,8 +102,8 @@ ELT-Bench/
 │   │   └── states.sql
 │   ├── airline/
 │   └── ... (98 more)
-│   └── agent_results/                 # Created when running evaluation
-│       └── <folder_name>/             # Your evaluation results
+├── results/                           # Created when running evaluation
+│   └── <folder_name>/                 # Your evaluation results
 ├── elt-docker/
 │   └── rest_api/                      # Created: API source data
 ├── setup/
@@ -117,7 +117,7 @@ ELT-Bench/
 - **`inputs/`**: Working copies for agents with injected credentials (generated from `elt-bench/`)
 - **`ground_truth/`**: Ground truth CSV data for validation (extracted from `gt.zip`)
 - **`evaluation/<problem>/`**: Expected SQL query results per problem (extracted from `gt.zip`)
-- **`evaluation/agent_results/<folder>/`**: Agent evaluation outputs (one folder per evaluation run)
+- **`results/<folder>/`**: Agent evaluation outputs (one folder per evaluation run)
 
 ## Workflow Overview
 
@@ -138,12 +138,12 @@ The typical workflow for using ELT-Bench:
 3. Evaluation Phase
    ├── Run eva.py with unique folder name
    ├── Compares agent output vs ground truth
-   └── Results saved to agent_results/<folder>/
+   └── Results saved to results/<folder>/
 ```
 
 **Directory Flow:**
 ```
-elt-bench/          →  inputs/           →  evaluation/agent_results/
+elt-bench/          →  inputs/           →  results/
 (benchmark defs)       (working copies)     (evaluation outputs)
                        ↓
                     agents work here
@@ -234,7 +234,7 @@ python eva.py --folder <folder_name> --example_index 0-4
 ```
 
 **Parameters:**
-- `--folder`: Name for this evaluation run (creates `agent_results/<folder_name>/`)
+- `--folder`: Name for this evaluation run (creates `results/<folder_name>/`)
 - `--example_index`: Problem indices to evaluate
   - `0-4`: Problems 0 through 4 (inclusive)
   - `2,3`: Only problems 2 and 3
@@ -247,9 +247,9 @@ python eva.py --folder my_agent_run_1 --example_index 0-99
 
 ### Evaluation Output Structure
 
-Results are saved to `evaluation/agent_results/<folder_name>/`:
+Results are saved to `results/<folder_name>/`:
 ```
-agent_results/
+results/
 └── <folder_name>/           # Your evaluation run
     ├── eval_address/        # Per-problem results
     │   ├── stage1.log       # Stage 1 evaluation logs
@@ -317,6 +317,5 @@ This will:
 To start fresh with evaluations while keeping ground truth:
 
 ```bash
-cd evaluation
-rm -rf agent_results/*  # Keeps agent_results/ directory structure
+rm -rf results/*  # Keeps results/ directory structure
 ```
