@@ -6,8 +6,4 @@ agents/spider-agent/output/*
 *.zip
 *.pyc
 **/*.pyc
-inputs/*
-setup/data/*
-elt-docker/rest_api/data/*
-ground_truth/*
-results/*
+data/*

@@ -71,7 +71,7 @@ def filter_databases(databases, example_index):
 
 
 def evaluate_stage1(folder, example_index, snowflake_config):
-  log_file = f'../results/{folder}/results.log'
+  log_file = f'../data/results/{folder}/results.log'
   with open('./table.json', 'r') as f:
       table_list = json.load(f)
 

@@ -99,17 +99,17 @@ def evaluate_stage2(folder, example_index, snowflake_config):
             with open(f'../results/{folder}/stage2.log', 'a') as f:
                 f.write(f'Table: {table}\n')
             try:
-                if not os.path.exists(f'../results/{folder}/{db}/{table}.csv'):       
+                if not os.path.exists(f'../data/results/{folder}/{db}/{table}.csv'):       
                     conn = snowflake.connector.connect(**snowflake_config)
                     with open(f'./{db}/{table}.sql', 'r') as f:
                         query = f.read()
                     df = pd.read_sql(query, conn)
-                    os.makedirs(f'../results/{folder}/{db}', exist_ok=True)
-                    df.to_csv(f'../results/{folder}/{db}/{table}.csv', index=False)
+                    os.makedirs(f'../data/results/{folder}/{db}', exist_ok=True)
+                    df.to_csv(f'../data/results/{folder}/{db}/{table}.csv', index=False)
                     conn.close()
-                df = pd.read_csv(f'../results/{folder}/{db}/{table}.csv')
-                df_gt = pd.read_csv(f'../ground_truth/{db}/{table}.csv')
+                df = pd.read_csv(f'../data/results/{folder}/{db}/{table}.csv')
+                df_gt = pd.read_csv(f'../data/ground_truth/{db}/{table}.csv')
                 check_corretness(df_gt, df)
             except Exception as e:
-                with open(f'../results/{folder}/stage2.log', 'a') as f:
+                with open(f'../data/results/{folder}/stage2.log', 'a') as f:
                     f.write(f'Error: {e}\n\n\n')

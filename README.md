@@ -30,7 +30,7 @@ ELT-Bench/
 ├── setup/                              # Setup scripts and credentials
 │   ├── elt_setup.sh                   # Main setup script
 │   ├── data_setup.sh                  # Database setup script
-│   ├── write_config.py                # Config generator for inputs/
+│   ├── write_config.py                # Config generator for workspace
 │   ├── airbyte/                       # Airbyte credentials
 │   ├── destination/                   # Snowflake credentials
 │   ├── sources/                       # Source database setup scripts
@@ -40,12 +40,13 @@ ELT-Bench/
 ├── agents/                             # Agent implementations
 │   ├── spider-agent/
 │   └── SWE-agent/
-├── evaluation/                         # Evaluation scripts (initially empty)
+├── evaluation/                         # Evaluation scripts
 │   ├── eva.py                         # Main evaluation script
 │   ├── eva_stage1.py                  # Stage 1 evaluator
-│   └── eva_stage2.py                  # Stage 2 evaluator
-├── ground_truth/                       # (Created during setup)
-├── inputs/                             # (Created during setup)
+│   ├── eva_stage2.py                  # Stage 2 evaluator
+│   ├── address/                       # Expected SQL queries per problem
+│   └── ...
+├── data/                               # (Created during setup - all generated content)
 ├── example/                            # Example usage
 ├── dev/                                # Development utilities
 ├── documentation/                      # API documentation
@@ -57,14 +58,14 @@ ELT-Bench/
 
 Running the setup script performs the following transformations:
 
-1. **Downloads and extracts data**:
-   - `data_api.zip` → `elt-docker/rest_api/` (API source data)
-   - `data_db.zip` → `setup/data/` (Database source data)
-   - `gt.zip` → `ground_truth/` (ground truth for evaluation)
+1. **Downloads and extracts data to `data/` directory**:
+   - `data_api.zip` → `data/source/api/` (API source data)
+   - `data_db.zip` → `data/source/db/` (Database source data)
+   - `gt.zip` → `data/ground_truth/` (ground truth for evaluation)
 
-2. **Creates `inputs/` directory**:
-   - Copies all 100 problems from `elt-bench/` to `inputs/`
-   - Each problem folder in `inputs/` contains:
+2. **Creates `data/inputs/` directory**:
+   - Copies all 100 problems from `elt-bench/` to `data/inputs/`
+   - Each problem folder in `data/inputs/` contains:
      - `config.yaml` (updated with Snowflake/Airbyte credentials)
      - `data_model.yaml`
      - `schemas/`
@@ -73,15 +74,47 @@ Running the setup script performs the following transformations:
      - `check_job_status.py` (copied)
      - `elt/` (created with `main.tf`)
 
-3. **Creates ground truth in root directory**:
-   - Extracts expected results for each problem to `evaluation/<problem_name>/`
-   - Creates `ground_truth/` directory with ground truth data for validation
+3. **All generated content organized under `data/`**:
+   - Source data for problems in `data/source/`
+   - Working copies for agents in `data/inputs/`
+   - Ground truth for validation in `data/ground_truth/`
+   - Evaluation results in `data/results/` (created when running evaluations)
 
 **Final structure**:
 ```
 ELT-Bench/
 ├── elt-bench/                          # Original benchmark definitions (unchanged)
-├── ground_truth/                       # Created: Ground truth data for validation
+├── data/                               # All generated content (gitignored)
+│   ├── inputs/                         # Working copies with credentials
+│   │   ├── address/
+│   │   │   ├── config.yaml            # Updated with credentials
+│   │   │   ├── data_model.yaml
+│   │   │   ├── schemas/
+│   │   │   ├── snowflake_credential.json
+│   │   │   ├── documentation/
+│   │   │   ├── check_job_status.py
+│   │   │   └── elt/
+│   │   └── ... (99 more)
+│   ├── ground_truth/                   # Ground truth validation data
+│   │   ├── address/
+│   │   │   └── *.csv
+│   │   └── ... (99 more)
+│   ├── source/                         # Source data for problems
+│   │   ├── api/                       # API data files
+│   │   └── db/                        # Database data files
+│   └── results/                        # Evaluation results
+│       └── run_20241021_143052/
+├── evaluation/                         # Evaluation scripts + SQL queries
+│   ├── eva.py, eva_stage1.py, eva_stage2.py
+│   ├── address/                       # Expected SQL queries
+│   │   └── states.sql
+│   └── ... (99 more)
+├── elt-docker/                         # Docker configs (data moved to data/source/api/)
+│   └── docker-compose.yml
+├── setup/                              # Setup scripts (data moved to data/source/db/)
+│   ├── elt_setup.sh
+│   └── write_config.py
+└── ... (other directories)
 │   ├── address/
 │   │   └── *.csv                      # Expected output data
 │   ├── airline/
@@ -113,11 +146,15 @@ ELT-Bench/
 
 ### Key Directory Roles
 
-- **`elt-bench/`**: Read-only benchmark problem definitions (never modified)
-- **`inputs/`**: Working copies for agents with injected credentials (generated from `elt-bench/`)
-- **`ground_truth/`**: Ground truth CSV data for validation (extracted from `gt.zip`)
-- **`evaluation/<problem>/`**: Expected SQL query results per problem (extracted from `gt.zip`)
-- **`results/<folder>/`**: Agent evaluation outputs (one folder per evaluation run)
+- **`elt-bench/`**: Read-only benchmark problem definitions (committed to Git, never modified)
+- **`data/`**: All generated content (gitignored, can be regenerated)
+  - **`data/inputs/`**: Working copies for agents with injected credentials
+  - **`data/ground_truth/`**: Ground truth CSV data for validation
+  - **`data/source/`**: Source data files (API and database data)
+  - **`data/results/`**: Agent evaluation outputs (timestamped folders)
+- **`evaluation/`**: Evaluation scripts and expected SQL queries per problem
+- **`setup/`**: Setup scripts and credential templates
+- **`elt-docker/`**: Docker compose configurations
 
 ## Workflow Overview
 
@@ -126,26 +163,33 @@ The typical workflow for using ELT-Bench:
 ```
 1. Setup Phase
    ├── Run elt_setup.sh
-   ├── Creates inputs/ from elt-bench/
-   ├── Downloads and extracts ground truth to ground_truth/ and evaluation/
+   ├── Creates data/inputs/ from elt-bench/
+   ├── Downloads and extracts all data to data/
    └── Starts Docker containers for data sources
 
 2. Agent Phase
-   ├── Agent reads problem from inputs/<problem>/
+   ├── Agent reads problem from data/inputs/<problem>/
    ├── Agent generates ELT pipeline code
    └── Agent executes pipeline
 
 3. Evaluation Phase
-   ├── Run eva.py with unique folder name
+   ├── Run eva.py (auto-timestamped)
    ├── Compares agent output vs ground truth
-   └── Results saved to results/<folder>/
+   └── Results saved to data/results/<timestamped_folder>/
 ```
 
 **Directory Flow:**
 ```
-elt-bench/          →  inputs/           →  results/
-(benchmark defs)       (working copies)     (evaluation outputs)
-                       ↓
+elt-bench/             →  data/inputs/         →  data/results/
+(benchmark defs)          (working copies)        (evaluation outputs)
+                          ↓
+                      agents work here
+                          ↓
+data/ground_truth/     →  comparison  ←  agent outputs
+(ground truth)
+evaluation/<problem>/
+(expected queries)
+```
                     agents work here
                        ↓
 ground_truth/       →  comparison  ←  agent outputs
@@ -217,7 +261,7 @@ NOTE: the range includes both ends, so 0-4 means examples 0, 1, 2, 3, and 4. To 
 To evaluate AI agents on ELT-Bench, follow the instructions in the `agents/` folder. This folder contains detailed steps for running each agent (Spider-Agent and SWE-agent).
 
 **Agent Workflow:**
-1. Agents work within the `inputs/<problem_name>/` directory
+1. Agents work within the `data/inputs/<problem_name>/` directory
 2. Agents receive problem configuration and credentials from `config.yaml`
 3. Agents generate ELT pipeline code (Terraform, SQL, etc.)
 4. Agents can use `check_job_status.py` to monitor pipeline execution
@@ -247,10 +291,10 @@ python eva.py --folder my_agent_run_1 --example_index 0-99
 
 ### Evaluation Output Structure
 
-Results are saved to `results/<folder_name>/`:
+Results are saved to `data/results/<folder_name>/`:
 ```
-results/
-└── <folder_name>/           # Your evaluation run
+data/results/
+└── <folder_name>/           # Your evaluation run (auto-timestamped)
     ├── eval_address/        # Per-problem results
     │   ├── stage1.log       # Stage 1 evaluation logs
     │   └── stage2.log       # Stage 2 evaluation logs
@@ -262,28 +306,28 @@ results/
 
 - **Stage 1**: Validates data extraction and loading (EL stage)
 - **Stage 2**: Validates data transformation results (T stage)
-- Results are compared against ground truth in `ground_truth/` and `evaluation/<problem>/`
+- Results are compared against ground truth in `data/ground_truth/` and `evaluation/<problem>/`
 
 **Important Notes:**
-- Each evaluation run should use a **unique folder name** to avoid overwriting previous results
-- Ground truth data in `ground_truth/` and `evaluation/<problem>/` must exist before running evaluation
+- Each evaluation run automatically gets a **unique timestamped folder** to avoid overwriting previous results
+- Ground truth data in `data/ground_truth/` and `evaluation/<problem>/` must exist before running evaluation
 - These are created by the setup script (`elt_setup.sh`)
 
 ## Common Issues and Solutions
 
-### Missing `inputs/` directory
+### Missing `data/inputs/` directory
 **Problem:** Agents can't find problem definitions  
-**Solution:** Run `setup/elt_setup.sh` to generate `inputs/` from `elt-bench/`
+**Solution:** Run `setup/elt_setup.sh` to generate `data/inputs/` from `elt-bench/`
 
 ### Missing ground truth for evaluation
 **Problem:** Evaluation fails with "ground truth not found"  
-**Solution:** Ensure `setup/elt_setup.sh` was run to extract `gt.zip` to `ground_truth/`
+**Solution:** Ensure `setup/elt_setup.sh` was run to extract `gt.zip` to `data/ground_truth/`
 
 ### Evaluation results overwritten
 **Problem:** Previous evaluation results were lost  
-**Solution:** Always use a unique `--folder` name for each evaluation run:
+**Solution:** As of the latest version, evaluation runs are automatically timestamped. You can also specify a custom folder:
 ```bash
-python eva.py --folder run_2024_10_18_v1 --example_index 0-99
+python eva.py --folder my_custom_run --example_index 0-99
 ```
 
 ### Credentials not found
@@ -291,17 +335,17 @@ python eva.py --folder run_2024_10_18_v1 --example_index 0-99
 **Solution:** 
 1. Fill in `setup/destination/snowflake_credential.json`
 2. Fill in `setup/airbyte/airbyte_credential.json`
-3. Re-run `setup/write_config.py` to update `inputs/` folders
+3. Re-run `setup/write_config.py` to update `data/inputs/` folders
 
-### Confusion between `elt-bench/` and `inputs/`
+### Confusion between `elt-bench/` and `data/inputs/`
 - **`elt-bench/`**: Original benchmark (read-only, never modify)
-- **`inputs/`**: Working copies for agents (generated, can be regenerated)
-- To reset: Delete `inputs/` and re-run `setup/write_config.py`
+- **`data/inputs/`**: Working copies for agents (generated, can be regenerated)
+- To reset: Delete `data/inputs/` and re-run `setup/write_config.py`
 
 ## Project Maintenance
 
-### Re-generating `inputs/` directory
-If you need to regenerate the `inputs/` directory with updated credentials:
+### Re-generating `data/inputs/` directory
+If you need to regenerate the `data/inputs/` directory with updated credentials:
 
 ```bash
 cd setup
@@ -309,7 +353,7 @@ python3 write_config.py
 ```
 
 This will:
-1. Delete and recreate `inputs/` from `elt-bench/`
+1. Delete and recreate `data/inputs/` from `elt-bench/`
 2. Inject current credentials from `setup/destination/` and `setup/airbyte/`
 3. Copy documentation and helper scripts
 
@@ -317,5 +361,14 @@ This will:
 To start fresh with evaluations while keeping ground truth:
 
 ```bash
-rm -rf results/*  # Keeps results/ directory structure
+rm -rf data/results/*  # Keeps results/ directory structure
+```
+
+### Reset All Generated Data
+To completely reset and start fresh:
+
+```bash
+rm -rf data/  # Removes all generated content
+cd setup
+./elt_setup.sh  # Re-download and extract everything
 ```
