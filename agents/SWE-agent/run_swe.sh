@@ -9,7 +9,7 @@ for table_name in "${table_names[@]}"; do
     # Copy input files for the current table
     rm -rf ./workspace
     mkdir ./workspace
-    cp -r ../../inputs/"$table_name"/* ./workspace/
+    cp -r ../../data/inputs/"$table_name"/* ./workspace/
     rm ./workspace/snowflake_credential.json
     # Run initialization script
     python create_snowflake_db.py --db "$table_name"
