@@ -9,6 +9,11 @@ gdown 'https://drive.google.com/uc?id=1qVAzU3kgn_G72QQ4b5zt3e1hwkQcSgDq'
 gdown 'https://drive.google.com/uc?id=1-Gv5g_Yg_YrR-NxH4s2tSEK3VhJQc2Q0'
 gdown 'https://drive.google.com/uc?id=11vQqNEWXoPG6sjKytAn7TtFLDMiQa17I'
 
+#Create the necessary folders
+mkdir -p ../data/source/api
+mkdir -p ../data/source/db
+mkdir -p ../data/ground_truth
+
 #Unzip the data used in the benchmark
 unzip data_api.zip -d ../data/source/api
 unzip data_db.zip -d ../data/source/db
