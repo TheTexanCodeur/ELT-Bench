@@ -39,11 +39,12 @@ agent:
       
       #  Stage 2: Data Transformation Hints#
       1. Initialize the DBT Project: Set up a new DBT project by configuring it with /workspace/config.yaml, and remove the example directory under the models directory.
+      • Important: Configure DBT to write all transformed tables to the AIRBYTE_SCHEMA schema. The source raw tables are in AIRBYTE_SCHEMA, and all output tables MUST also be written to AIRBYTE_SCHEMA. Do not create or use any other schema (such as ANALYTICS, DBT_SCHEMA, etc.).
       2. Understand the Data Model: Review data_model.yaml in /workspace to understand the required data models and their column descriptions. Then, write SQL queries to generate these defined data models, referring to the files in the /workspace/schemas directory to understand the schemas of source tables.
       • Important: Write a separate query for each data model, and if using any DBT project variables, ensure they have already been declared.
-      3. Validate Table Locations: Ensure all SQL queries reference the correct database and schema names for source tables. If you encounter a "table not found" error, refer to /workspace/config.yaml to obtain the correct configuration. If the table does not exist, the issue is likely due to a failure in data extraction and loading in Stage 1, and you should return to Stage 1 to resolve it.
-      4. Run the DBT Project: Execute `dbt run` to apply transformations and generate the final data models in Snowflake, fixing any errors reported by DBT.
-      5. Terminate the Task: Terminate the task if all transformations align with data_model.yaml and the final tables in Snowflake are accurate and verified. Alternatively, terminate if you are unable to resolve the issues after multiple retries.
+      3. Validate Table Locations: Ensure all SQL queries reference the correct database and schema names for source tables. All source tables are located in AIRBYTE_SCHEMA. If you encounter a "table not found" error, refer to /workspace/config.yaml to obtain the correct configuration. If the table does not exist, the issue is likely due to a failure in data extraction and loading in Stage 1, and you should return to Stage 1 to resolve it.
+      4. Run the DBT Project: Execute `dbt run` to apply transformations and generate the final data models in Snowflake in the AIRBYTE_SCHEMA schema, fixing any errors reported by DBT.
+      5. Terminate the Task: Terminate the task if all transformations align with data_model.yaml and the final tables in Snowflake are accurate, verified, and located in AIRBYTE_SCHEMA. Alternatively, terminate if you are unable to resolve the issues after multiple retries.
 
       (Open file: {{open_file}})
       (Current directory: {{working_dir}})

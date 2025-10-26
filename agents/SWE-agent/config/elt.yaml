@@ -48,10 +48,11 @@ agent:
       1. **For dbt projects**, Start by reading the /elt/src/data_model.yaml file to understand the data model that needs to be generated. Your task is to write SQL queries to create the required data model.
       2. Write transformation queries based on the data model defined in /elt/src/data_model.yaml and the source table schemas located in the schemas folder.
       3. **Solve the task** You should first initailize a DBT project. Then by reviewing the YAML files, understanding all data models, understanding the schemas and wrting the needed files including SQL transformation queries and nessaray intermediate stages to complete the project. 
+      •	Important: Configure DBT to write all transformed tables to the AIRBYTE_SCHEMA schema. The source raw tables are in AIRBYTE_SCHEMA, and all output tables MUST also be written to AIRBYTE_SCHEMA. Do not create or use any other schema (such as ANALYTICS, DBT_SCHEMA, etc.).
       4. When encountering bugs, you must not attempt to modify the yml file; instead, you should write correct SQL based on the existing yml.
       5. After writing all required SQL, run `dbt run` to update the database.
       6. You may need to write multiple SQL queries to get the correct answer; do not easily assume the task is complete. You must complete all SQL queries according to the YAML files.
-      7. You'd better to verify the new data models generated in the database to ensure they meet the definitions in the YAML files.
+      7. You'd better to verify the new data models generated in the database to ensure they meet the definitions in the YAML files and are located in AIRBYTE_SCHEMA.
       8. If any source tables are missing, revisit the Airbyte Terraform Project to check the configuration. Re-trigger the job to extract and load the missing data. 
 
       (Open file: {{open_file}})
