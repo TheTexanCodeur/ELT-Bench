@@ -17,6 +17,8 @@ logger = logging.getLogger("spider_agent")
 logger.setLevel(logging.DEBUG)
 
 datetime_str: str = datetime.datetime.now().strftime("%Y%m%d@%H%M%S")
+# Ensure the logs directory exists so FileHandler won't raise FileNotFoundError
+os.makedirs("logs", exist_ok=True)
 
 file_handler = logging.FileHandler(os.path.join("logs", "normal-{:}.log".format(datetime_str)), encoding="utf-8")
 debug_handler = logging.FileHandler(os.path.join("logs", "debug-{:}.log".format(datetime_str)), encoding="utf-8")
@@ -186,6 +188,10 @@ def test(
                 "work_dir": "/workspace"
             }
         }
+        # Provide a default image_name for local mode so Spider_Agent_Env
+        # doesn't raise KeyError when it expects env_config['image_name'].
+        # The environment runs locally (no container) so None is appropriate.
+        env_config["image_name"] = None
         task_config['config'] = [{"type": "copy_all_subfiles", "parameters": {"dirs": [os.path.join(args.test_path, db)]}}]
 
 
