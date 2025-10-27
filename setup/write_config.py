@@ -15,19 +15,11 @@ for db in databases:
   with open(f'../data/inputs/{db}/config.yaml', 'r') as file:
     config_data = yaml.safe_load(file)
 
-
   with open('./destination/snowflake_credential.json', 'r') as file:
     snowflake_credential = json.load(file)
-  with open('./airbyte/airbyte_credential.json', 'r') as file:
-    airbyte_credential = json.load(file)
 
-
+  # Update Snowflake configuration only (Airbyte config removed - EL handled separately)
   config_data['snowflake']['config']['account'] = snowflake_credential['account']
-  config_data['Airbyte']['config']['password'] = airbyte_credential['password']
-  config_data['Airbyte']['config']['username'] = airbyte_credential['username']
-  config_data['Airbyte']['config']['workspace_id'] = airbyte_credential['workspace_id']
-  if 'custom_api' in config_data:
-    config_data['Airbyte']['config']['custom_api_definition_id'] = "8c0df240-cb31-4e3f-a98c-d64d2d846cb8"
 
   with open(f'../data/inputs/{db}/config.yaml', 'w') as file:
     yaml.dump(config_data, file)
@@ -40,7 +32,5 @@ for db in databases:
   with open(f'../data/inputs/{db}/snowflake_credential.json', 'w') as file:
     json.dump(new_sf_credentials, file)
 
-  os.system(f"cp -r ../documentation ../data/inputs/{db}/")
-  os.system(f"cp  ./check_job_status.py ../data/inputs/{db}/")
-  os.system(f"mkdir ../data/inputs/{db}/elt")
-  os.system(f"cp  ./main.tf ../data/inputs/{db}/elt")
+  # EL stage files removed - agents only handle transformation now
+  # Previously copied: documentation/, check_job_status.py, elt/main.tf

@@ -22,38 +22,18 @@ agent:
       Remember, you should always include a _SINGLE_ tool call/function call and then wait for a response from the shell before continuing with more discussion and commands. Everything you include in the DISCUSSION section will be saved for future reference.
 
     instance_template: |-
-      We're currently building the ELT pipeline using Airbyte Terraform and DBT. Here's the detailed instruction:
+      We're currently building the transformation phase of an ELT pipeline using DBT. All data has already been extracted and loaded into Snowflake.
 
       INSTRUCTIONS:
-      # Stage 1: Creating sources, destinations and connections in Airbyte Hint#
-      1.	Begin by initializing an Airbyte Terraform project in the /elt/src directory.
-      2. Use the provided /elt/src/airbyte_config.yaml to initialize the provider Airbyte in main.tf. The values in /elt/src/airbyte_config.yaml represent the actual configuration needed for the project.
-      3.	Look at the provided /elt/src/config.yaml to learn the types of sources and destinations that need to be created. Then, refer to the Airbyte official documentation in /elt/src/documentation folder to understand how to configure the sources and destinations.
-      4. After referring to the documentation, create sources and destinations in the Airbyte Terraform project based on the configuration in /elt/src/config.yaml.
-      •	Important: The values in the documentation are examples for reference only. DO NOT directly use them. Always use the specific values from /elt/src/config.yaml during configuration.
-      •	If the documentation mentions optional fields that are not present in /elt/src/config.yaml, skip them without assigning any default or random values.
-      4.	After creating sources and destinations, establish a connection between them by referring to /elt/src/documentation/connection.md.
-      5.	After modifying the .tf file, run terraform init to initialize the project, followed by terraform apply to create the resources.
-      6.	Handling Errors:
-      •	If errors occur, do not modify /elt/src/config.yaml. Verify the configuration against the plugin /elt/src/documentation and ensure YAML formatting is correct.
-      •	Proceed to the next stage only after successful data extraction and loading.
-
-      # Stage 2: Triggering the Airbyte Sync
-      1.	After successfully creating sources and destinations, trigger the job to extract and load data. Refer to /elt/src/documentation/trigger_job.md for guidance and use /elt/src/config.yaml to retrieve the necessary values.
-      2.	First, retrieve the connection IDs for the newly created connections and use them to initiate the job.
-      3.	Trigger the job using the Airbyte API and the obtained connection IDs.
-      4.	Check the status of all triggered jobs by running 'python /elt/src/check_job_status.py --server <server> --username <username> --password <passwod>', you need to replace <server>, <username>, <passwod> with the actual value>. If all jobs are successful, proceed to the next stage. Otherwise, return to the previous stage to identify and resolve any issues.
-
-      # Stage 3: DBT Project for Data Transformation Hint#
+      # Data Transformation Hints#
       1. **For dbt projects**, Start by reading the /elt/src/data_model.yaml file to understand the data model that needs to be generated. Your task is to write SQL queries to create the required data model.
       2. Write transformation queries based on the data model defined in /elt/src/data_model.yaml and the source table schemas located in the schemas folder.
-      3. **Solve the task** You should first initailize a DBT project. Then by reviewing the YAML files, understanding all data models, understanding the schemas and wrting the needed files including SQL transformation queries and nessaray intermediate stages to complete the project. 
+      3. **Solve the task** You should first initialize a DBT project. Then by reviewing the YAML files, understanding all data models, understanding the schemas and writing the needed files including SQL transformation queries and necessary intermediate stages to complete the project. 
       •	Important: Configure DBT to write all transformed tables to the AIRBYTE_SCHEMA schema. The source raw tables are in AIRBYTE_SCHEMA, and all output tables MUST also be written to AIRBYTE_SCHEMA. Do not create or use any other schema (such as ANALYTICS, DBT_SCHEMA, etc.).
       4. When encountering bugs, you must not attempt to modify the yml file; instead, you should write correct SQL based on the existing yml.
-      5. After writing all required SQL, run `dbt run` to update the database.
+      5. After writing all required SQL, run `dbt run` to update the database in the AIRBYTE_SCHEMA schema.
       6. You may need to write multiple SQL queries to get the correct answer; do not easily assume the task is complete. You must complete all SQL queries according to the YAML files.
-      7. You'd better to verify the new data models generated in the database to ensure they meet the definitions in the YAML files and are located in AIRBYTE_SCHEMA.
-      8. If any source tables are missing, revisit the Airbyte Terraform Project to check the configuration. Re-trigger the job to extract and load the missing data. 
+      7. You'd better verify the new data models generated in the database to ensure they meet the definitions in the YAML files and are located in AIRBYTE_SCHEMA. 
 
       (Open file: {{open_file}})
       (Current directory: {{working_dir}})
