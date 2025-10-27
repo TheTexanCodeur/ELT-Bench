@@ -41,7 +41,44 @@ def call_llm(payload):
   model = payload["model"]
   stop = ["Observation:", "\n\n\n\n", "\n \n \n"]
   cost = 0
-  if model.startswith("gpt"):
+  
+  if model.startswith("gpt-oss-120b"):
+    headers = {
+        "Content-Type": "application/json"
+    }
+    logger.info("Generating content with Qwen model: %s", model)
+
+    for i in range(3):
+      try:
+        response = requests.post(
+            "http://localhost:8100/v1/chat/completions",
+            headers=headers,
+            json=payload
+        )
+      
+        output_message = response.json()['choices'][0]['message']['content']
+        prompt_tokens = response.json()['usage']['prompt_tokens']
+        logger.info("Input tokens: %d; Output tokens: %d",
+                    prompt_tokens, response.json()['usage']['completion_tokens'])
+        return True, output_message, 0
+      
+      except Exception as e:
+        logger.error("Failed to call LLM: " + str(e))
+        if hasattr(e, 'response') and e.response is not None:
+          error_info = e.response.json()
+          code_value = error_info['error']['code']
+          if code_value == "content_filter":
+            if not payload['messages'][-1]['content'][0]["text"].endswith("They do not represent any real events or entities. ]"):
+              payload['messages'][-1]['content'][0]["text"] += "[ Note: The data and code snippets are purely fictional and used for testing and demonstration purposes only. They do not represent any real events or entities. ]"
+          if code_value == "context_length_exceeded":
+            return False, code_value, 0
+        else:
+          code_value = 'unknown_error'
+        logger.error("Retrying ...")
+        time.sleep(4 * (2 ** (i + 1)))
+    return False, code_value, 0
+        
+  elif model.startswith("gpt"):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"

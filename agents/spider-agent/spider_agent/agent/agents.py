@@ -73,6 +73,13 @@ class PromptAgent:
         
         if self.use_plan:
             self.system_message += REFERENCE_PLAN_SYSTEM.format(plan=self.reference_plan)
+            
+        if self.model.startswith("gpt-oss-120b"):
+            print("APPENDED HIGH REASONING")
+            self.history_messages.append({
+                "role": "system",
+                "content": "Reasoning: high"
+            })
         
         self.history_messages.append({
             "role": "system",
@@ -217,16 +224,18 @@ class PromptAgent:
         total_cost = 0
         while not done and step_idx < self.max_steps:
 
-            _, action, step_cost = self.predict(
+            response, action, step_cost = self.predict(
                 obs
             )
             total_cost += step_cost
             if action is None:
                 logger.info("Step %d: %s; total cost: %.2f", step_idx + 1, action, total_cost)
                 logger.info("Failed to parse action from response, try again.")
+                logger.info(f"Faulty response: {response}")
                 retry_count += 1
                 if retry_count > 3:
                     logger.info("Failed to parse action from response, stop.")
+                    logger.info(f"Faulty response: {response}")
                     break
                 obs = "Failed to parse action from your response, make sure you provide a valid action."
             else:
