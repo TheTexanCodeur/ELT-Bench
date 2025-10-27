@@ -50,7 +50,7 @@ def check_corretness(df_gt, df):
         else:
             missed_cols.append(gold_col)
 
-    with open(f'../results/{args.folder}/stage2.log', 'a') as f:
+    with open(f'../data/results/{args.folder}/stage2.log', 'a') as f:
         f.write(f"Matched columns: {matched_cols}\n")
         f.write(f"Unmatched columns: {unmatched_cols}\n")
         f.write(f"Missed: {missed_cols}\n\n\n")
@@ -79,7 +79,7 @@ def filter_databases(databases, example_index):
 
 def evaluate_stage2(folder, example_index, snowflake_config):
     # databases = []
-    # with open(f'../results/{folder}/results.log', 'r') as f:
+    # with open(f'../data/results/{folder}/results.log', 'r') as f:
     #     for line in f:
     #         s = line.split(' ')
     #         if s[0] == 'Success:':
@@ -91,12 +91,12 @@ def evaluate_stage2(folder, example_index, snowflake_config):
                     
     for db in databases:
         tables = [f.name for f in os.scandir(f'./{db}') if f.is_file() and f.name.endswith('.sql')]
-        with open(f'../results/{folder}/stage2.log', 'a') as f:
+        with open(f'../data/results/{folder}/stage2.log', 'a') as f:
             f.write(f'Database: {db}\n')
             
         for table in tables:
             table = table.split('.')[0]
-            with open(f'../results/{folder}/stage2.log', 'a') as f:
+            with open(f'../data/results/{folder}/stage2.log', 'a') as f:
                 f.write(f'Table: {table}\n')
             try:
                 if not os.path.exists(f'../data/results/{folder}/{db}/{table}.csv'):       
