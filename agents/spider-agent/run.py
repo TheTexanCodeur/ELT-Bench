@@ -180,15 +180,12 @@ def test(
 
 
 
-        env_config = \
-        {
+        env_config = {
             "init_args": {
                 "name": experiment_id,
-                "work_dir": "/workspace",
-                "network": "elt-docker_elt_network"
+                "work_dir": "/workspace"
             }
         }
-        env_config["image_name"] = "elt_agent-image"
         task_config['config'] = [{"type": "copy_all_subfiles", "parameters": {"dirs": [os.path.join(args.test_path, db)]}}]
 
 
