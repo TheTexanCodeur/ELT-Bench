@@ -1,32 +1,181 @@
-# ELT-Bench
-The first comprehensive, end-to-end benchmark designed to evaluate AI agents in automating ELT pipelines.
-![ELT](https://anonymous.4open.science/r/ELT-Bench-B51C/materials/elt.svg)
+# ELT-Bench (Transform Stage Only)
 
-## Table of Contents
-- [Overview](#overview)
-- [Project Structure](#project-structure)
-  - [Directory Layout (Before Setup)](#directory-layout-before-setup)
-  - [How Setup Transforms the Structure](#how-setup-transforms-the-structure)
-  - [Directory Roles and Responsibilities](#directory-roles-and-responsibilities)
-- [Workflow Overview](#workflow-overview)
-- [Environment Setup](#environment-setup)
-- [Running Agents](#running-agents)
-- [Evaluation](#evaluation)
-- [Common Issues and Solutions](#common-issues-and-solutions)
-- [Project Maintenance](#project-maintenance)
+A benchmark suite for evaluating AI agents on **data transformation tasks** using Snowflake and SQL/DBT.
 
-## Overview
+**Based on:** [uiuc-kang-lab/ELT-Bench](https://github.com/uiuc-kang-lab/ELT-Bench)  
+**Modification:** This fork focuses **exclusively on the Transform (T)** stage. All Extract (E) and Load (L) operations are pre-completed.
 
-ELT-Bench is a benchmark suite containing **100 ELT pipeline problems** that test AI agents' ability to:
-1. **Extract** data from various sources (PostgreSQL, MongoDB, S3, APIs, files)
-2. **Load** data into Snowflake
-3. **Transform** data according to specified requirements
+## 🎯 What is ELT-Bench?
 
-The project uses a **two-tier structure**:
-- **`elt-bench/`**: Read-only benchmark definitions (committed to Git)
-- **`data/`**: Generated working environment (gitignored, recreated by setup)
+ELT-Bench contains **100 data transformation problems** where AI agents must:
+1. Read source tables from Snowflake (`AIRBYTE_SCHEMA`)
+2. Generate SQL/DBT transformations based on requirements
+3. Create target tables in the same schema
 
-## Project Structure
+**Important:** This benchmark evaluates **only the Transform (T)** stage. Source data is pre-loaded into Snowflake before agents start working. Unlike the original ELT-Bench, agents do **not** need to configure or run Airbyte for data extraction and loading.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Install Prerequisites
+
+- **Docker** - For running agent containers
+- **Conda** - For Python environment management
+- **Snowflake Account** - For data storage and transformations
+
+### 2. Setup Environment
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd ELT-Bench
+
+# Create conda environment
+conda create -y -n elt python=3.11
+conda activate elt
+
+# Install dependencies
+cd setup
+pip install -r requirements.txt
+```
+
+### 3. Configure Snowflake
+
+**A. Run the setup SQL in your Snowflake account:**
+
+Copy and execute `setup/destination/setup.sql` in Snowflake. This creates:
+- Database: `AIRBYTE_DATABASE`
+- Schema: `AIRBYTE_SCHEMA`
+- User: `AIRBYTE_USER` (password: `Snowflake@123`)
+- Role: `AIRBYTE_ROLE`
+- Warehouse: `AIRBYTE_WAREHOUSE`
+
+**B. Add your Snowflake credentials:**
+
+Edit `setup/destination/snowflake_credential.json`:
+```json
+{
+  "account": "your-account.region.snowflakecomputing.com",
+  "user": "AIRBYTE_USER",
+  "password": "Snowflake@123"
+}
+```
+
+⚠️ **Important:** Use role `AIRBYTE_ROLE`, not `SYSADMIN`
+
+### 4. Download and Setup Data
+
+```bash
+# From setup/ directory
+bash elt_setup.sh
+```
+
+This will:
+- Download source data, ground truth, and schemas (via Google Drive)
+- Extract files to `data/` directory
+- Generate agent workspaces in `data/inputs/` with credentials
+
+### 5. Load Source Data to Snowflake
+
+```bash
+# From project root
+python3 dev/snowflake-connector/upload_tables.py --example_index 0-99
+```
+
+This uploads all 100 problems' source tables to `AIRBYTE_SCHEMA`. You can also upload specific problems:
+- `--example_index 0-4` - Upload first 5 problems
+- `--example_index 0,5,10` - Upload specific problems
+
+**Verify:** Check Snowflake for tables in `AIRBYTE_DATABASE.AIRBYTE_SCHEMA`
+
+---
+
+## 🤖 Running Agents
+
+### Agent Workspace Structure
+
+Each problem has a workspace in `data/inputs/<problem>/`:
+
+```
+data/inputs/address/
+├── config.yaml                 # Source table information
+├── data_model.yaml             # Target schema requirements
+├── schemas/                    # Source data schemas
+│   └── *.json
+└── snowflake_credential.json   # Snowflake connection info
+```
+
+### Agent Requirements
+
+Your agent should:
+
+1. **Read requirements** from the workspace files
+2. **Generate transformation code** (SQL, DBT, Python)
+3. **Execute transformations** that:
+   - Read from `AIRBYTE_SCHEMA` (source tables)
+   - Write to `AIRBYTE_SCHEMA` (target tables)
+   - Match the schema defined in `data_model.yaml`
+
+### Example Agent Implementations
+
+See these for reference:
+- `agents/spider-agent/` - Spider-based agent
+- `agents/SWE-agent/` - SWE-agent implementation
+
+---
+
+## ✅ Evaluation
+
+### Run Evaluation
+
+```bash
+cd evaluation
+python eva.py --folder <run_name> --example_index <range>
+```
+
+**Examples:**
+```bash
+# Evaluate all 100 problems
+python eva.py --folder my_run --example_index 0-99
+
+# Evaluate first 5 problems (for testing)
+python eva.py --folder test --example_index 0-4
+
+# Evaluate specific problems
+python eva.py --folder targeted --example_index 10,25,50
+```
+
+### Evaluation Stages
+
+**Stage 1: Source Table Validation**
+- Verifies source tables exist in `AIRBYTE_SCHEMA`
+- Compares against ground truth data
+- Validates row counts, schemas, and data values
+
+**Stage 2: Transformation Validation**
+- Executes SQL queries from `evaluation/<problem>/*.sql`
+- Compares transformation results against expected output
+- Validates business logic and data model compliance
+
+### Results
+
+Results are saved to `data/results/<run_name>/`:
+
+```
+data/results/my_run/
+├── eval_address/
+│   ├── stage1.log    # Source validation logs
+│   └── stage2.log    # Transformation validation logs
+├── eval_airline/
+│   ├── stage1.log
+│   └── stage2.log
+└── ...
+```
+
+---
+
+## 📁 Project Structure
 
 ### Directory Layout (Before Setup)
 
@@ -45,32 +194,19 @@ ELT-Bench/
 ├── setup/                              # 🔧 SETUP SCRIPTS & CREDENTIALS
 │   ├── elt_setup.sh                   # Main setup orchestrator
 │   ├── write_config.py                # Generates data/inputs/ from elt-bench/
-│   ├── data_setup.sh                  # Database initialization script
-│   ├── check_job_status.py            # Job monitoring helper (copied to inputs)
-│   ├── main.tf                        # Terraform template (copied to inputs)
-│   ├── mongo.py                       # MongoDB data loader
 │   ├── requirements.txt               # Python dependencies
-│   ├── elt_bench.yaml                 # Airbyte connector definition
 │   │
-│   ├── airbyte/                       # Airbyte credentials (user-filled)
-│   │   └── airbyte_credential.json    # {username, password, workspace_id, api_definition_id}
-│   │
-│   ├── destination/                   # Snowflake credentials (user-filled)
-│   │   ├── snowflake_credential.json  # {account, user, password}
-│   │   └── setup.sql                  # Snowflake setup SQL
-│   │
-│   └── sources/                       # Source database setup scripts
-│       ├── postgres_setup.sql         # PostgreSQL schema & data
-│       └── ...
+│   └── destination/                   # Snowflake credentials (user-filled)
+│       ├── snowflake_credential.json  # {account, user, password}
+│       └── setup.sql                  # Snowflake setup SQL
 │
-├── elt-docker/                         # 🐳 DOCKER INFRASTRUCTURE
-│   ├── docker-compose.yml             # Defines: PostgreSQL, MongoDB, S3 (LocalStack), APIs
-│   └── rest_api/                      # (Created by setup) API source data
+├── elt-docker/                         # 🐳 DOCKER INFRASTRUCTURE (for agent containers)
+│   └── docker-compose.yml             # Defines agent environment images
 │
 ├── evaluation/                         # ✅ EVALUATION FRAMEWORK
 │   ├── eva.py                         # Main evaluation orchestrator
-│   ├── eva_stage1.py                  # Stage 1: Data extraction/loading validator
-│   ├── eva_stage2.py                  # Stage 2: Data transformation validator
+│   ├── eva_stage1.py                  # Stage 1: Source table validation
+│   ├── eva_stage2.py                  # Stage 2: Transformation validation
 │   ├── table.json                     # Table metadata for validation
 │   │
 │   └── address/, airline/, ... (100)  # Expected SQL queries per problem
@@ -79,17 +215,6 @@ ELT-Bench/
 ├── agents/                             # 🤖 AGENT IMPLEMENTATIONS
 │   ├── spider-agent/                  # Spider Agent implementation
 │   └── SWE-agent/                     # SWE Agent implementation
-│
-├── documentation/                      # 📚 API/PROVIDER DOCUMENTATION
-│   ├── connection.md                  # Connection guidelines
-│   ├── source_postgres.md             # PostgreSQL source docs
-│   ├── source_mongodb_v2.md           # MongoDB source docs
-│   ├── source_s3.md                   # S3 source docs
-│   ├── source_file.md                 # File source docs
-│   ├── source_custom_api.md           # Custom API source docs
-│   ├── destination_snowflake.md       # Snowflake destination docs
-│   ├── airbyte_Provider.md            # Airbyte provider docs
-│   └── trigger_job.md                 # Job triggering docs
 │
 ├── dev/                                # 🛠️ DEVELOPMENT UTILITIES
 │   ├── csv_checker.py                 # CSV validation tool
@@ -122,34 +247,16 @@ unzip data_db.zip -d ../data/source/db       # → data/source/db/
 unzip gt.zip -d ../data/ground_truth         # → data/ground_truth/
 ```
 
-#### Step 3: Start Docker Infrastructure
-```bash
-cd ../elt-docker
-docker compose up -d
-```
-Launches containers:
-- PostgreSQL (port 5432)
-- MongoDB (port 27017)
-- LocalStack S3 (port 4566)
-- REST API servers (various ports)
-
-#### Step 4: Generate Working Directories (`write_config.py`)
+#### Step 3: Generate Working Directories (`write_config.py`)
 For each of the 100 problems in `elt-bench/`, creates a working copy in `data/inputs/` with:
 
 **Original files (copied from `elt-bench/<problem>/`):**
-- `config.yaml` (modified - see below)
+- `config.yaml`
 - `data_model.yaml`
 - `schemas/` directory
 
 **Injected credentials:**
-- Updates `config.yaml` with Snowflake account from `setup/destination/snowflake_credential.json`
-- Updates `config.yaml` with Airbyte credentials from `setup/airbyte/airbyte_credential.json`
-- Creates `snowflake_credential.json` with connection details
-
-**Added resources:**
-- `documentation/` (entire directory copied from root)
-- `check_job_status.py` (copied from `setup/`)
-- `elt/main.tf` (Terraform template copied from `setup/`)
+- Creates `snowflake_credential.json` with connection details from `setup/destination/snowflake_credential.json`
 
 **Resulting structure after setup:**
 
@@ -166,14 +273,10 @@ ELT-Bench/
 │   │
 │   ├── inputs/                         # 💼 WORKING COPIES (agents work here)
 │   │   ├── address/
-│   │   │   ├── config.yaml            # ✏️ Modified with credentials
+│   │   │   ├── config.yaml            # Copied from elt-bench/
 │   │   │   ├── data_model.yaml        # Copied from elt-bench/
 │   │   │   ├── schemas/               # Copied from elt-bench/
-│   │   │   ├── snowflake_credential.json  # ✨ Created (Snowflake auth)
-│   │   │   ├── documentation/         # 📚 Copied from root
-│   │   │   ├── check_job_status.py    # 🔍 Monitoring helper
-│   │   │   └── elt/                   # 🏗️ Created directory
-│   │   │       └── main.tf            # Terraform template
+│   │   │   └── snowflake_credential.json  # ✨ Created (Snowflake auth)
 │   │   └── ... (99 more problems)
 │   │
 │   ├── source/                         # 📥 SOURCE DATA (extracted from ZIPs)
@@ -197,7 +300,7 @@ ELT-Bench/
 │   └── results/                        # 📊 EVALUATION OUTPUTS (created on eval run)
 │       └── run_YYYYMMDD_HHMMSS/       # Timestamped evaluation run
 │           ├── eval_address/
-│           │   ├── stage1.log         # Extraction/loading validation
+│           │   ├── stage1.log         # Source table validation
 │           │   └── stage2.log         # Transformation validation
 │           └── ... (evaluated problems)
 │
@@ -208,7 +311,7 @@ ELT-Bench/
 │   └── ... (scripts unchanged)
 │
 └── elt-docker/
-    └── rest_api/                       # 🌐 (symlinked/copied from data/source/api/)
+    └── (agent docker images)
 ```
 
 ### Directory Roles and Responsibilities
@@ -222,9 +325,8 @@ ELT-Bench/
 | **`data/results/`** | Evaluation outputs | ✅ Written by `eva.py` | ❌ No (gitignored) |
 | **`setup/`** | Setup scripts & credential templates | 👤 User fills credentials | ✅ Yes (except ZIPs) |
 | **`evaluation/`** | Evaluation scripts & SQL queries | ❌ Framework code | ✅ Yes |
-| **`elt-docker/`** | Docker infrastructure | ❌ Infrastructure | ✅ Yes |
+| **`elt-docker/`** | Agent container images | ❌ Infrastructure | ✅ Yes |
 | **`agents/`** | Agent implementations | 👤 User develops | ✅ Yes |
-| **`documentation/`** | API/provider guides | ❌ Reference material | ✅ Yes |
 | **`dev/`** | Development utilities | 👤 Helper tools | ✅ Yes |
 
 **Key Principles:**
@@ -236,13 +338,10 @@ ELT-Bench/
 **File Flow Summary:**
 ```
 elt-bench/<problem>/          →  (write_config.py)  →  data/inputs/<problem>/
-├── config.yaml (template)                            ├── config.yaml (+ credentials)
+├── config.yaml                                       ├── config.yaml
 ├── data_model.yaml                                   ├── data_model.yaml
 └── schemas/                                          ├── schemas/
-                                                      ├── snowflake_credential.json (new)
-documentation/ (root)         →  (copied)         →  ├── documentation/
-setup/check_job_status.py     →  (copied)         →  ├── check_job_status.py
-setup/main.tf                 →  (copied)         →  └── elt/main.tf
+                                                      └── snowflake_credential.json (new)
 
 setup/data_*.zip              →  (extracted)      →  data/source/{api,db}/
 setup/gt.zip                  →  (extracted)      →  data/ground_truth/
@@ -254,25 +353,24 @@ The complete ELT-Bench workflow consists of three phases:
 ### Phase 1: Setup (One-time)
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 1. User fills credentials                                   │
-│    ├── setup/airbyte/airbyte_credential.json               │
+│ 1. User fills Snowflake credentials                         │
 │    └── setup/destination/snowflake_credential.json         │
 ├─────────────────────────────────────────────────────────────┤
 │ 2. Run setup/elt_setup.sh                                   │
 │    ├── Downloads ZIPs (data_api, data_db, gt)              │
 │    ├── Extracts to data/ directory                         │
-│    ├── Starts Docker containers                            │
 │    └── Runs write_config.py                                │
 ├─────────────────────────────────────────────────────────────┤
 │ 3. write_config.py generates data/inputs/                   │
 │    ├── Copies elt-bench/ → data/inputs/                    │
-│    ├── Injects credentials into config.yaml                │
-│    ├── Creates snowflake_credential.json                   │
-│    └── Adds documentation, helpers, templates              │
+│    └── Creates snowflake_credential.json                   │
+├─────────────────────────────────────────────────────────────┤
+│ 4. Upload source data to Snowflake                          │
+│    └── python dev/snowflake-connector/upload_tables.py     │
 └─────────────────────────────────────────────────────────────┘
                            ↓
           data/inputs/ ready for agents
-          data/source/ populated with source data
+          AIRBYTE_SCHEMA populated with source tables
           data/ground_truth/ populated with expected outputs
 ```
 
@@ -282,23 +380,20 @@ The complete ELT-Bench workflow consists of three phases:
 │ Agent operates in: data/inputs/<problem>/                   │
 │                                                             │
 │ 1. Reads problem requirements                               │
-│    ├── config.yaml (sources, credentials)                  │
+│    ├── config.yaml (source table info)                     │
 │    ├── data_model.yaml (target schema)                     │
-│    └── documentation/ (API guides)                         │
+│    ├── schemas/ (source schemas)                           │
+│    └── snowflake_credential.json (connection)              │
 ├─────────────────────────────────────────────────────────────┤
-│ 2. Generates ELT pipeline code                              │
-│    ├── Extract: Airbyte connectors, Python scripts         │
-│    ├── Load: Snowflake SQL, Terraform                      │
-│    └── Transform: dbt, SQL, Python                         │
+│ 2. Generates transformation code                            │
+│    └── Transform: dbt, SQL queries                         │
 ├─────────────────────────────────────────────────────────────┤
-│ 3. Executes pipeline                                        │
-│    ├── Triggers data extraction                            │
-│    ├── Loads to Snowflake                                  │
-│    ├── Runs transformations                                │
-│    └── Uses check_job_status.py to monitor                 │
+│ 3. Executes transformations                                 │
+│    ├── Reads from AIRBYTE_SCHEMA (source tables)           │
+│    └── Writes to AIRBYTE_SCHEMA (target tables)            │
 └─────────────────────────────────────────────────────────────┘
                            ↓
-            Data loaded into Snowflake
+            Transformed data in AIRBYTE_SCHEMA
 ```
 
 ### Phase 3: Evaluation (Validation)
@@ -306,9 +401,9 @@ The complete ELT-Bench workflow consists of three phases:
 ┌─────────────────────────────────────────────────────────────┐
 │ Run: python evaluation/eva.py --folder <name> --example_index 0-99 │
 │                                                             │
-│ 1. Stage 1: Extraction/Loading Validation                  │
+│ 1. Stage 1: Source Table Validation                        │
 │    ├── Connects to Snowflake                               │
-│    ├── Queries raw tables                                  │
+│    ├── Queries source tables in AIRBYTE_SCHEMA             │
 │    ├── Compares vs data/ground_truth/<problem>/*.csv       │
 │    └── Logs to data/results/<folder>/eval_<problem>/stage1.log │
 ├─────────────────────────────────────────────────────────────┤
@@ -325,11 +420,11 @@ The complete ELT-Bench workflow consists of three phases:
 ```
 elt-bench/          (read-only templates)
     ↓ copied by write_config.py
-data/inputs/        (agent workspace - credentials injected)
+data/inputs/        (agent workspace)
     ↓ agent reads
-  Agent             (generates code, executes pipeline)
+  Agent             (generates transformation code, executes SQL/DBT)
     ↓ writes to
-Snowflake           (destination database)
+Snowflake           (AIRBYTE_SCHEMA - reads source, writes target)
     ↓ queried by
 evaluation/         (validation scripts + SQL queries)
     ↓ compares against
@@ -346,12 +441,8 @@ Before starting, ensure you have installed:
 
 | Tool | Purpose | Installation Guide |
 |------|---------|-------------------|
-| **Docker** | Runs PostgreSQL, MongoDB, S3, API sources | [Install Docker](https://docs.docker.com/get-docker/) |
+| **Docker** | Runs agent containers | [Install Docker](https://docs.docker.com/get-docker/) |
 | **Conda** | Python environment management | [Install Conda](https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html) |
-| **Airbyte** | Data integration platform (optional*) | [Airbyte OSS Quickstart](https://docs.airbyte.com/using-airbyte/getting-started/oss-quickstart) |
-| **psql** | PostgreSQL CLI (optional*) | [Install psql](https://www.timescale.com/blog/how-to-install-psql-on-mac-ubuntu-debian-windows) |
-
-**Note:** *Optional components only needed for full Extract-Load workflow. Transform-only workflows can skip Airbyte and psql.
 
 ### Setup Steps
 
@@ -400,53 +491,11 @@ Edit `setup/destination/snowflake_credential.json`:
 
 **Important:** Use role `AIRBYTE_ROLE`, **not** `SYSADMIN`.
 
-#### 3. Configure Airbyte (Optional - for EL stages)
-
-**3.1. Deploy Airbyte**
-
-```bash
-# May require sudo depending on your setup
-abctl local install
-
-# Retrieve credentials
-abctl local credentials
-```
-
-**3.2. Import Custom Connector**
-
-1. Navigate to [http://localhost:8000/](http://localhost:8000/)
-2. Login with credentials from step 3.1
-3. Go to **Builder > Import a YAML**
-4. Upload `setup/elt_bench.yaml`
-5. Click **Publish** → type "ignore warnings" → Publish to workspace
-
-**3.3. Get Workspace & Definition IDs**
-
-1. Go to **Sources > Custom > ELT Bench**
-2. Extract IDs from URL:
-   ```
-   http://localhost:8012/workspaces/<workspace_id>/source/new-source/<api_definition_id>
-   ```
-
-**3.4. Fill Airbyte Credentials**
-
-Edit `setup/airbyte/airbyte_credential.json`:
-
-```json
-{
-  "username": "your-username",
-  "password": "your-password",
-  "workspace_id": "your-workspace-id",
-  "api_definition_id": "your-api-definition-id"
-}
-```
-
-#### 4. Run Main Setup Script
+#### 3. Run Main Setup Script
 
 Execute the setup script to:
 - Download source data and ground truth (via `gdown`)
 - Extract to `data/` directory
-- Start Docker containers
 - Generate `data/inputs/` with credentials
 
 ```bash
@@ -460,8 +509,7 @@ bash elt_setup.sh
    - `data_db.zip` - Database source data
    - `gt.zip` - Ground truth validation data
 2. Extracts archives to `data/source/` and `data/ground_truth/`
-3. Starts Docker containers (PostgreSQL, MongoDB, LocalStack S3, APIs)
-4. Runs `write_config.py` to generate `data/inputs/` with injected credentials
+3. Runs `write_config.py` to generate `data/inputs/` with Snowflake credentials
 
 **Expected output structure:**
 ```
@@ -473,9 +521,9 @@ data/
 └── ground_truth/    # Expected outputs (100 folders)
 ```
 
-#### 5. Load Data to Snowflake
+#### 4. Load Source Data to Snowflake
 
-Upload benchmark data to Snowflake:
+Upload source data to Snowflake's `AIRBYTE_SCHEMA`:
 
 ```bash
 # From project root
@@ -488,35 +536,19 @@ python3 dev/snowflake-connector/upload_tables.py --example_index 0-99
 - `--example_index 2,5,7`: Uploads specific problems
 
 **Verification:**
-After upload, check Snowflake for tables in `AIRBYTE_DATABASE.AIRBYTE_SCHEMA`.
-
-### Optional: Database-Specific Setup (for EL stages)
-
-If working with Extract-Load stages, you may need to populate source databases:
-
-```bash
-cd setup
-
-# Initialize PostgreSQL tables
-bash data_setup.sh $(pwd)
-
-# Load MongoDB data
-python3 mongo.py --path $(pwd)
-```
+After upload, check Snowflake for source tables in `AIRBYTE_DATABASE.AIRBYTE_SCHEMA`.
 
 ### Troubleshooting Setup
 
 | Issue | Solution |
 |-------|----------|
 | `gdown` fails to download | Check internet connection, Google Drive quota |
-| Docker containers fail to start | Check port availability (5432, 27017, 4566) |
 | Snowflake connection fails | Verify credentials in `setup/destination/snowflake_credential.json` |
 | `data/inputs/` empty after setup | Run `python3 setup/write_config.py` manually |
-| Airbyte UI not accessible | Ensure Airbyte is running: `abctl local status` |
 
 ## Running Agents
 
-Agents work within the `data/inputs/<problem>/` directory structure. Each problem folder contains everything an agent needs to build and execute an ELT pipeline.
+Agents work within the `data/inputs/<problem>/` directory structure. Each problem folder contains everything an agent needs to build and execute transformation pipelines.
 
 ### Agent Input Structure
 
@@ -524,42 +556,32 @@ For each problem in `data/inputs/<problem>/`:
 
 ```
 data/inputs/address/
-├── config.yaml                 # Data source configurations (with credentials)
+├── config.yaml                 # Data source configurations
 ├── data_model.yaml             # Required output schema definition
 ├── schemas/                    # Source data schemas
 │   ├── postgres_schema.json
 │   ├── mongodb_schema.json
 │   └── ...
-├── snowflake_credential.json   # Snowflake connection details
-├── documentation/              # API/provider documentation
-│   ├── source_postgres.md
-│   ├── source_mongodb_v2.md
-│   ├── destination_snowflake.md
-│   └── ...
-├── check_job_status.py         # Helper to monitor pipeline execution
-└── elt/                        # Agent's working directory
-    └── main.tf                 # Terraform template (if needed)
+└── snowflake_credential.json   # Snowflake connection details
 ```
 
 ### Agent Workflow
 
 1. **Read Problem Requirements**
-   - `config.yaml`: Identifies data sources (PostgreSQL, MongoDB, S3, APIs, files)
+   - `config.yaml`: Identifies source table names
    - `data_model.yaml`: Defines target schema and transformations
    - `schemas/`: Provides source data structures
 
-2. **Generate Pipeline Code**
-   - **Extract**: Create Airbyte connections, API calls, or file readers
-   - **Load**: Write Snowflake DDL, configure destinations
+2. **Generate Transformation Code**
    - **Transform**: Generate SQL transformations, dbt models, or Python scripts
+   - **Important**: All transformations must read from and write to `AIRBYTE_SCHEMA`
 
-3. **Execute Pipeline**
-   - Deploy infrastructure (Terraform, Airbyte connectors)
-   - Trigger data extraction and loading
-   - Run transformations
-   - Use `check_job_status.py` to monitor progress
+3. **Execute Transformations**
+   - Connect to Snowflake using `snowflake_credential.json`
+   - Read from source tables in `AIRBYTE_SCHEMA`
+   - Create target tables in `AIRBYTE_SCHEMA` according to `data_model.yaml`
 
-4. **Output to Snowflake**
+3.  **Output to Snowflake**
    - Tables loaded to: `AIRBYTE_DATABASE.AIRBYTE_SCHEMA.<table_name>`
    - Agent should ensure data matches `data_model.yaml` specifications
 
@@ -576,29 +598,19 @@ Each agent directory contains:
 - Execution scripts
 - Documentation
 
-### Development Utilities
-
-Agents can use the following utilities:
-
-| Utility | Location | Purpose |
-|---------|----------|---------|
-| `check_job_status.py` | Each `data/inputs/<problem>/` | Monitor Airbyte job status |
-| `upload_tables.py` | `dev/snowflake-connector/` | Upload data to Snowflake |
-| `csv_checker.py` | `dev/` | Validate CSV outputs |
-
 ### Agent Best Practices
 
 1. **Never modify `elt-bench/`** - Always work in `data/inputs/`
-2. **Use provided credentials** - Read from `config.yaml` and `snowflake_credential.json`
+2. **Use provided credentials** - Read from `snowflake_credential.json`
 3. **Follow schema specifications** - Match output to `data_model.yaml`
-4. **Log progress** - Use `check_job_status.py` for monitoring
+4. **Write to AIRBYTE_SCHEMA** - All transformations must write to the same schema as the source tables
 5. **Handle errors gracefully** - Implement retry logic for transient failures
 
 ## Evaluation
 
 The evaluation framework validates agent performance across two stages:
-- **Stage 1**: Data extraction and loading (EL) - verifies raw data in Snowflake
-- **Stage 2**: Data transformation (T) - validates transformed output against expected results
+- **Stage 1**: Source table validation - verifies source data is present in Snowflake's AIRBYTE_SCHEMA
+- **Stage 2**: Transformation validation - validates transformed output against expected results
 
 ### Running Evaluation
 
@@ -725,359 +737,6 @@ Before running evaluation, ensure:
 
 **Note:** Evaluation runs are automatically timestamped to prevent overwriting previous results. You can specify a custom folder name with `--folder` for organization.
 
-## Common Issues and Solutions
-
-### Setup Issues
-
-| Issue | Symptoms | Solution |
-|-------|----------|----------|
-| **Missing `data/inputs/`** | Agent can't find problem folders | Run `cd setup && bash elt_setup.sh` |
-| **Empty `data/inputs/`** | Folders exist but no files | Run `cd setup && python3 write_config.py` |
-| **Missing ground truth** | Evaluation fails: "ground truth not found" | Re-run `elt_setup.sh` to extract `gt.zip` |
-| **Download fails** | `gdown` errors | Check internet, Google Drive quota, retry |
-| **Docker containers fail** | Can't connect to PostgreSQL/MongoDB | Check ports 5432, 27017, 4566 not in use |
-
-### Credential Issues
-
-| Issue | Symptoms | Solution |
-|-------|----------|----------|
-| **Snowflake connection fails** | "Authentication failed" | Verify `setup/destination/snowflake_credential.json` |
-| **Wrong Snowflake role** | Permission denied errors | Use `AIRBYTE_ROLE`, not `SYSADMIN` |
-| **Airbyte auth fails** | Can't connect to Airbyte API | Verify `setup/airbyte/airbyte_credential.json` |
-| **Credentials not in `data/inputs/`** | Agents can't connect | Re-run `python3 setup/write_config.py` |
-
-### Data Issues
-
-| Issue | Symptoms | Solution |
-|-------|----------|----------|
-| **Tables not in Snowflake** | Evaluation fails: "table not found" | Run `python3 dev/snowflake-connector/upload_tables.py --example_index 0-99` |
-| **Partial data in Snowflake** | Row count mismatches | Check source data in `data/source/`, re-upload |
-| **Source database empty** | No data to extract | Run `cd setup && bash data_setup.sh $(pwd)` |
-| **MongoDB data missing** | MongoDB queries return no results | Run `cd setup && python3 mongo.py --path $(pwd)` |
-
-### Evaluation Issues
-
-| Issue | Symptoms | Solution |
-|-------|----------|----------|
-| **"Ground truth not found"** | Can't find CSV files | Ensure `data/ground_truth/` populated by setup |
-| **SQL query files missing** | Stage 2 fails | Check `evaluation/<problem>/*.sql` exists |
-| **Stage 1 passes, Stage 2 fails** | Data loaded but transformations wrong | Review agent's transformation logic |
-| **Results overwritten** | Previous results lost | Use unique `--folder` names or rely on auto-timestamping |
-
-### Directory Confusion
-
-**Problem:** Unclear whether to work in `elt-bench/` or `data/inputs/`
-
-**Solution:**
-- **`elt-bench/`**: Source of truth, **never modify** directly
-- **`data/inputs/`**: Working copies for agents, **safe to modify**
-- To reset: Delete `data/inputs/` and re-run `setup/write_config.py`
-
-### Reset Workflows
-
-**Reset generated data (keep credentials):**
-```bash
-rm -rf data/inputs/
-cd setup
-python3 write_config.py
-```
-
-**Reset evaluation results:**
-```bash
-rm -rf data/results/*
-```
-
-**Complete reset (re-download everything):**
-```bash
-rm -rf data/
-cd setup
-bash elt_setup.sh
-```
-
-**Reset Snowflake data:**
-```sql
--- In Snowflake worksheet
-USE DATABASE AIRBYTE_DATABASE;
-USE SCHEMA AIRBYTE_SCHEMA;
-DROP SCHEMA AIRBYTE_SCHEMA CASCADE;
-CREATE SCHEMA AIRBYTE_SCHEMA;
-```
-
-Then re-upload:
-```bash
-python3 dev/snowflake-connector/upload_tables.py --example_index 0-99
-```
-
-## Project Maintenance
-
-### Regenerating `data/inputs/` Directory
-
-If credentials change or you need fresh working copies:
-
-```bash
-cd setup
-python3 write_config.py
-```
-
-**What happens:**
-1. Deletes existing `data/inputs/` (if present)
-2. Copies all 100 problems from `elt-bench/` → `data/inputs/`
-3. Injects current credentials from:
-   - `setup/destination/snowflake_credential.json`
-   - `setup/airbyte/airbyte_credential.json`
-4. Creates `snowflake_credential.json` in each problem folder
-5. Copies `documentation/`, `check_job_status.py`, `elt/main.tf`
-
-**Use cases:**
-- Updated Snowflake credentials
-- Updated Airbyte workspace/definition IDs
-- Corrupted `data/inputs/` needs reset
-- Want to test with fresh environment
-
-### Updating Credentials
-
-**Step 1: Update credential files**
-
-```bash
-# Edit Snowflake credentials
-vim setup/destination/snowflake_credential.json
-
-# Edit Airbyte credentials
-vim setup/airbyte/airbyte_credential.json
-```
-
-**Step 2: Propagate to working directories**
-
-```bash
-cd setup
-python3 write_config.py
-```
-
-All 100 problem folders in `data/inputs/` will receive updated credentials.
-
-### Cleaning Evaluation Results
-
-**Remove all evaluation runs:**
-```bash
-rm -rf data/results/*
-```
-
-**Remove specific run:**
-```bash
-rm -rf data/results/my_old_run/
-```
-
-**Archive before cleaning:**
-```bash
-# Create archive
-tar -czf evaluation_archive_$(date +%Y%m%d).tar.gz data/results/
-
-# Then clean
-rm -rf data/results/*
-```
-
-### Resetting to Fresh State
-
-**Option 1: Full reset (everything)**
-```bash
-# Remove all generated data
-rm -rf data/
-
-# Re-run complete setup
-cd setup
-bash elt_setup.sh
-
-# Re-upload to Snowflake
-cd ..
-python3 dev/snowflake-connector/upload_tables.py --example_index 0-99
-```
-
-**Option 2: Partial reset (keep downloaded data)**
-```bash
-# Remove only working directories and results
-rm -rf data/inputs/ data/results/
-
-# Regenerate working directories
-cd setup
-python3 write_config.py
-```
-
-**Option 3: Reset only evaluation**
-```bash
-rm -rf data/results/*
-```
-
-### Version Control Best Practices
-
-**What to commit:**
-- ✅ `elt-bench/` (benchmark definitions)
-- ✅ `setup/*.py`, `setup/*.sh` (setup scripts)
-- ✅ `evaluation/` (evaluation framework)
-- ✅ `agents/` (agent implementations)
-- ✅ `documentation/` (API docs)
-- ✅ `dev/` (development utilities)
-
-**What to ignore (already in `.gitignore`):**
-- ❌ `data/` (all generated content)
-- ❌ `setup/*.zip` (downloaded archives)
-- ❌ `setup/*_credential.json` (credentials)
-- ❌ `__pycache__/` (Python cache)
-- ❌ `*.pyc` (compiled Python)
-
-### Maintaining Data Integrity
-
-**Verify ground truth integrity:**
-```bash
-# Check if ground truth exists for all problems
-for i in {0..99}; do
-  problem=$(ls -d elt-bench/* | sed -n "$((i+1))p" | xargs basename)
-  if [ ! -d "data/ground_truth/$problem" ]; then
-    echo "Missing: $problem"
-  fi
-done
-```
-
-**Verify `data/inputs/` completeness:**
-```bash
-# Should show 100 directories
-ls -d data/inputs/*/ | wc -l
-
-# Check each has required files
-for dir in data/inputs/*/; do
-  if [ ! -f "$dir/config.yaml" ] || [ ! -f "$dir/snowflake_credential.json" ]; then
-    echo "Incomplete: $dir"
-  fi
-done
-```
-
-**Verify Snowflake tables:**
-```sql
--- In Snowflake worksheet
-USE DATABASE AIRBYTE_DATABASE;
-USE SCHEMA AIRBYTE_SCHEMA;
-
--- Count tables (should have tables for loaded problems)
-SHOW TABLES;
-
--- Check specific table
-SELECT COUNT(*) FROM address_table;
-```
-
-### Adding New Problems
-
-To add a new benchmark problem:
-
-1. **Create problem folder in `elt-bench/`:**
-   ```bash
-   mkdir elt-bench/new_problem
-   ```
-
-2. **Add required files:**
-   ```
-   elt-bench/new_problem/
-   ├── config.yaml          # Source configurations
-   ├── data_model.yaml      # Target schema
-   └── schemas/             # Source schemas
-   ```
-
-3. **Create evaluation queries:**
-   ```bash
-   mkdir evaluation/new_problem
-   # Add *.sql files with expected queries
-   ```
-
-4. **Add ground truth:**
-   ```bash
-   mkdir data/ground_truth/new_problem
-   # Add expected output CSVs
-   ```
-
-5. **Regenerate working directory:**
-   ```bash
-   cd setup
-   python3 write_config.py
-   ```
-
-### Monitoring Disk Usage
-
-The `data/` directory can grow large:
-
-```bash
-# Check total size
-du -sh data/
-
-# Check breakdown
-du -sh data/*/
-
-# Largest problem folders
-du -sh data/inputs/* | sort -h | tail -20
-```
-
-**Space-saving tips:**
-- Delete `data/results/` after archiving
-- Keep only recent evaluation runs
-- Compress old archives: `tar -czf old_results.tar.gz data/results/old_run/`
-
----
-
-## Quick Reference
-
-### Essential Commands
-
-**Initial Setup:**
-```bash
-# 1. Create conda environment
-conda create -y -n elt && conda activate elt && conda install -y python=3.11
-
-# 2. Install dependencies
-cd setup && pip install -r requirements.txt
-
-# 3. Fill credentials (edit these files)
-vim setup/destination/snowflake_credential.json
-vim setup/airbyte/airbyte_credential.json
-
-# 4. Run setup
-bash elt_setup.sh
-
-# 5. Upload to Snowflake
-cd .. && python3 dev/snowflake-connector/upload_tables.py --example_index 0-99
-```
-
-**Run Evaluation:**
-```bash
-cd evaluation
-python eva.py --folder <run_name> --example_index 0-99
-```
-
-**Regenerate Working Directories:**
-```bash
-cd setup
-python3 write_config.py
-```
-
-### Key File Locations
-
-| What You Need | Where to Find It |
-|---------------|------------------|
-| **Problem definitions** | `elt-bench/<problem>/` |
-| **Agent workspace** | `data/inputs/<problem>/` |
-| **Source data** | `data/source/api/` and `data/source/db/` |
-| **Ground truth** | `data/ground_truth/<problem>/` |
-| **Evaluation results** | `data/results/<folder>/` |
-| **Snowflake credentials** | `setup/destination/snowflake_credential.json` |
-| **Airbyte credentials** | `setup/airbyte/airbyte_credential.json` |
-| **SQL validation queries** | `evaluation/<problem>/*.sql` |
-
-### Directory Quick Guide
-
-```
-elt-bench/          ← Original problems (DON'T MODIFY)
-data/inputs/        ← Agent workspace (AGENTS WORK HERE)
-data/ground_truth/  ← Expected outputs (FOR VALIDATION)
-data/results/       ← Evaluation logs (GENERATED)
-setup/              ← Setup scripts + credentials (USER FILLS)
-evaluation/         ← Validation framework (RUNS EVALUATION)
-```
 
 ### Common Workflows
 
@@ -1107,14 +766,3 @@ rm -rf data/
 cd setup && bash elt_setup.sh
 cd .. && python3 dev/snowflake-connector/upload_tables.py --example_index 0-99
 ```
-
-### Support & Documentation
-
-- **API Documentation**: See `documentation/` folder
-- **Agent Examples**: See `agents/` folder  
-- **Setup Issues**: See [Common Issues](#common-issues-and-solutions) section
-- **Evaluation Details**: See [Evaluation](#evaluation) section
-
----
-
-**Built with ❤️ for AI agent ELT pipeline benchmarking**
