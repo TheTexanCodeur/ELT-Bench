@@ -121,8 +121,6 @@ Your agent should:
 
 See these for reference:
 - `agents/spider-agent/` - Spider-based agent
-- `agents/SWE-agent/` - SWE-agent implementation
-
 ---
 
 ## ✅ Evaluation
