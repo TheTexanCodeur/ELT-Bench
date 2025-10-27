@@ -136,7 +136,7 @@ start, end = select_tables(args.example_index)
 
 for folder_name in names[start:end]:
         
-    folder_path = f"./setup/data/{folder_name}"
+    folder_path = f"./data/source/db/data/{folder_name}"
     
     conn.cursor().execute(f"DROP DATABASE IF EXISTS {folder_name}")
 
@@ -165,7 +165,7 @@ for folder_name in names[start:end]:
         for file in os.listdir(folder_path):
             
             # Build the path dynamically
-            file_path = base_path / "setup" / "data" / folder_name / file
+            file_path = base_path / "data" / "source" / "db" / "data" / folder_name / file
             
             # Normalize the entire path (base + subfolders + filename)
             normalized_path = unicodedata.normalize("NFC", str(file_path))
@@ -214,7 +214,7 @@ for folder_name in names[start:end]:
             
             print(f"Finished loading file {file_name}", flush=True)
         
-    folder_path = f"./elt-docker/rest_api/data/{folder_name}"
+    folder_path = f"./data/source/api/data/{folder_name}"
     
     if os.path.isdir(folder_path):
         
@@ -222,7 +222,7 @@ for folder_name in names[start:end]:
         for file in os.listdir(folder_path):
             
             # Build the path dynamically
-            file_path = base_path / "elt-docker" / "rest_api" / "data" / folder_name / file
+            file_path = base_path / "data" / "source" / "api" / "data" /folder_name / file
 
             
             # Normalize the entire path (base + subfolders + filename)
