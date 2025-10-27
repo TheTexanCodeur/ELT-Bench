@@ -20,7 +20,6 @@ ELT-Bench contains **100 data transformation problems** where AI agents must:
 
 ### 1. Install Prerequisites
 
-- **Docker** - For running agent containers
 - **Conda** - For Python environment management
 - **Snowflake Account** - For data storage and transformations
 
@@ -198,8 +197,6 @@ ELT-Bench/
 │       ├── snowflake_credential.json  # {account, user, password}
 │       └── setup.sql                  # Snowflake setup SQL
 │
-├── elt-docker/                         # 🐳 DOCKER INFRASTRUCTURE (for agent containers)
-│   └── docker-compose.yml             # Defines agent environment images
 │
 ├── evaluation/                         # ✅ EVALUATION FRAMEWORK
 │   ├── eva.py                         # Main evaluation orchestrator
@@ -302,14 +299,12 @@ ELT-Bench/
 │           │   └── stage2.log         # Transformation validation
 │           └── ... (evaluated problems)
 │
-├── setup/                              # 🔧 (artifacts added after download)
-│   ├── data_api.zip                   # ⬇️ Downloaded archive
-│   ├── data_db.zip                    # ⬇️ Downloaded archive
-│   ├── gt.zip                         # ⬇️ Downloaded archive
-│   └── ... (scripts unchanged)
-│
-└── elt-docker/
-    └── (agent docker images)
+└── setup/                              # 🔧 (artifacts added after download)
+   ├── data_api.zip                   # ⬇️ Downloaded archive
+   ├── data_db.zip                    # ⬇️ Downloaded archive
+   ├── gt.zip                         # ⬇️ Downloaded archive
+   └── ... (scripts unchanged)
+
 ```
 
 ### Directory Roles and Responsibilities
@@ -323,7 +318,6 @@ ELT-Bench/
 | **`data/results/`** | Evaluation outputs | ✅ Written by `eva.py` | ❌ No (gitignored) |
 | **`setup/`** | Setup scripts & credential templates | 👤 User fills credentials | ✅ Yes (except ZIPs) |
 | **`evaluation/`** | Evaluation scripts & SQL queries | ❌ Framework code | ✅ Yes |
-| **`elt-docker/`** | Agent container images | ❌ Infrastructure | ✅ Yes |
 | **`agents/`** | Agent implementations | 👤 User develops | ✅ Yes |
 | **`dev/`** | Development utilities | 👤 Helper tools | ✅ Yes |
 
@@ -439,7 +433,6 @@ Before starting, ensure you have installed:
 
 | Tool | Purpose | Installation Guide |
 |------|---------|-------------------|
-| **Docker** | Runs agent containers | [Install Docker](https://docs.docker.com/get-docker/) |
 | **Conda** | Python environment management | [Install Conda](https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html) |
 
 ### Setup Steps
