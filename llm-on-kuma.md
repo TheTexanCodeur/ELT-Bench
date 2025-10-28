@@ -22,7 +22,7 @@ pip install --upgrade pip wheel setuptools
 # install PyTorch and vLLM
 pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision torchaudio
 pip install vllm
-pip install vllm[flashinfer] #Faster inference with FlashAttention
+pip install -q huggingface_hub
 ```
 
 ## Create a GPU shell
@@ -48,8 +48,6 @@ export HUGGINGFACE_HUB_CACHE="$HF_HOME"
 MODEL_DIR="$HF_HOME/gpt-oss-120b"
 mkdir -p "$HF_HOME"
 
-pip install -q huggingface_hub
-
 # download the model
 huggingface-cli download openai/gpt-oss-120b \
   --local-dir "$HF_HOME/gpt-oss-120b" \
@@ -62,8 +60,6 @@ huggingface-cli download openai/gpt-oss-120b \
 vllm serve "$MODEL_DIR" \
 --served-model-name gpt-oss-120b \
 --port 8100 
-
-ssh -L 8100:localhost:8100 qsandoz@kuma.hpc.epfl.ch
 ```
 
 ## Second shell on the same node (for reverse tunneling if needed)
@@ -77,10 +73,16 @@ ssh -R 8100:localhost:8100 <username>@kuma.hpc.epfl.ch
 ## On your local machine, run:
 
 ```
-ssh -L 8000:localhost:8000 <username>@kuma.hpc.epfl.ch
+ssh -L 8100:localhost:8100 <username>@kuma.hpc.epfl.ch
 ```
 
 Adjust the port numbers if 8000 is already taken.
+
+## Verify connection on local machine
+
+```
+curl http://localhost:8100/v1/models
+```
 
 ## Run a pipeline (in the agents/spider-agent folder):
 
