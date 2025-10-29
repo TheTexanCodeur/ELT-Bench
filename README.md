@@ -546,63 +546,10 @@ After upload, check Snowflake for source tables in `AIRBYTE_DATABASE.AIRBYTE_SCH
 
 ## Running Agents
 
-Agents work within the `data/inputs/<problem>/` directory structure. Each problem folder contains everything an agent needs to build and execute transformation pipelines.
-
-### Agent Input Structure
-
-For each problem in `data/inputs/<problem>/`:
-
-```
-data/inputs/address/
-├── config.yaml                 # Data source configurations
-├── data_model.yaml             # Required output schema definition
-├── schemas/                    # Source data schemas
-│   ├── postgres_schema.json
-│   ├── mongodb_schema.json
-│   └── ...
-└── snowflake_credential.json   # Snowflake connection details
-```
-
-### Agent Workflow
-
-1. **Read Problem Requirements**
-   - `config.yaml`: Identifies source table names
-   - `data_model.yaml`: Defines target schema and transformations
-   - `schemas/`: Provides source data structures
-
-2. **Generate Transformation Code**
-   - **Transform**: Generate SQL transformations, dbt models, or Python scripts
-   - **Important**: All transformations must read from and write to `AIRBYTE_SCHEMA`
-
-3. **Execute Transformations**
-   - Connect to Snowflake using `snowflake_credential.json`
-   - Read from source tables in `AIRBYTE_SCHEMA`
-   - Create target tables in `AIRBYTE_SCHEMA` according to `data_model.yaml`
-
-3.  **Output to Snowflake**
-   - Tables loaded to: `AIRBYTE_DATABASE.AIRBYTE_SCHEMA.<table_name>`
-   - Agent should ensure data matches `data_model.yaml` specifications
-
-### Agent Implementations
-
-See the `agents/` directory for example implementations:
-
+See the `agents/` directory for instructions and examples:
 - **`agents/spider-agent/`**: Spider-based agent implementation
-- **`agents/SWE-agent/`**: SWE-agent implementation
 
-Each agent directory contains:
-- Setup instructions
-- Configuration files
-- Execution scripts
-- Documentation
 
-### Agent Best Practices
-
-1. **Never modify `elt-bench/`** - Always work in `data/inputs/`
-2. **Use provided credentials** - Read from `snowflake_credential.json`
-3. **Follow schema specifications** - Match output to `data_model.yaml`
-4. **Write to AIRBYTE_SCHEMA** - All transformations must write to the same schema as the source tables
-5. **Handle errors gracefully** - Implement retry logic for transient failures
 
 ## Evaluation
 
@@ -626,47 +573,14 @@ python eva.py --folder <folder_name> --example_index <range>
 
 **Examples:**
 
-```bash
-# Evaluate all 100 problems
-python eva.py --folder full_evaluation --example_index 0-99
-
 # Evaluate first 5 problems for testing
+```
 python eva.py --folder quick_test --example_index 0-4
+```
 
 # Evaluate specific problems
+```
 python eva.py --folder targeted_test --example_index 10,25,50,75
-```
-
-### Evaluation Process
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│ Stage 1: Extraction & Loading Validation (eva_stage1.py)    │
-├──────────────────────────────────────────────────────────────┤
-│ 1. Connects to Snowflake                                     │
-│ 2. Queries raw tables in AIRBYTE_DATABASE.AIRBYTE_SCHEMA    │
-│ 3. Compares against: data/ground_truth/<problem>/*.csv      │
-│ 4. Validates:                                                │
-│    ├── Row counts match                                      │
-│    ├── Column names match                                    │
-│    ├── Data types correct                                    │
-│    └── Values match expected data                           │
-│ 5. Logs results to: data/results/<folder>/eval_<problem>/stage1.log │
-└──────────────────────────────────────────────────────────────┘
-                              ↓
-┌──────────────────────────────────────────────────────────────┐
-│ Stage 2: Transformation Validation (eva_stage2.py)          │
-├──────────────────────────────────────────────────────────────┤
-│ 1. Reads SQL queries from: evaluation/<problem>/*.sql       │
-│ 2. Executes queries against Snowflake                       │
-│ 3. Compares results against ground truth                    │
-│ 4. Validates:                                                │
-│    ├── Transformation logic correct                         │
-│    ├── Aggregations accurate                                │
-│    ├── Joins produce expected results                       │
-│    └── Final schema matches data_model.yaml                 │
-│ 5. Logs results to: data/results/<folder>/eval_<problem>/stage2.log │
-└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Evaluation Output
@@ -685,82 +599,6 @@ data/results/
     └── ... (for each evaluated problem)
 ```
 
-**Log Format:**
-
-Each log contains:
-- **Timestamp**: When evaluation ran
-- **Problem Name**: Which problem was evaluated
-- **Stage**: Stage 1 or Stage 2
-- **Status**: PASS/FAIL
-- **Details**: 
-  - Row count comparisons
-  - Schema validations
-  - Data mismatches (if any)
-  - Error messages (if failed)
-
-### Evaluation Requirements
-
-Before running evaluation, ensure:
-
-1. **Ground truth exists**: `data/ground_truth/` populated by `setup/elt_setup.sh`
-2. **SQL queries exist**: `evaluation/<problem>/*.sql` present
-3. **Snowflake has data**: Agent successfully loaded data
-4. **Credentials configured**: Snowflake connection works
-
-### Understanding Results
-
-**Stage 1 Pass Criteria:**
-- All expected tables exist in Snowflake
-- Row counts match ground truth
-- Column names and types match
-- Data values match ground truth CSVs
-
-**Stage 2 Pass Criteria:**
-- Transformation queries execute successfully
-- Results match expected output
-- Data model requirements satisfied
-- All business logic correctly implemented
-
-**Common Failure Reasons:**
-
-| Failure | Cause | Solution |
-|---------|-------|----------|
-| Stage 1: Table not found | Agent didn't load data | Check agent logs, verify pipeline ran |
-| Stage 1: Row count mismatch | Incomplete extraction | Verify source data availability |
-| Stage 1: Schema mismatch | Wrong column types | Check `schemas/` and fix data types |
-| Stage 2: Query error | Transformation logic wrong | Review `data_model.yaml`, fix SQL |
-| Stage 2: Result mismatch | Incorrect aggregation | Debug transformation code |
-
 ### Automated Timestamping
 
 **Note:** Evaluation runs are automatically timestamped to prevent overwriting previous results. You can specify a custom folder name with `--folder` for organization.
-
-
-### Common Workflows
-
-**Test agent on one problem:**
-```bash
-# Run agent on data/inputs/address/
-<your_agent_command>
-
-# Evaluate
-cd evaluation
-python eva.py --folder test_run --example_index 0
-```
-
-**Full benchmark run:**
-```bash
-# Run agent on all 100 problems
-<your_agent_loop_command>
-
-# Evaluate all
-cd evaluation
-python eva.py --folder full_run --example_index 0-99
-```
-
-**Reset everything:**
-```bash
-rm -rf data/
-cd setup && bash elt_setup.sh
-cd .. && python3 dev/snowflake-connector/upload_tables.py --example_index 0-99
-```
