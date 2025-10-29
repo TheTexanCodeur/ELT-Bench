@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 from spider_agent.envs.spider_agent import Spider_Agent_Env
 from spider_agent.agent.agents import PromptAgent
-from create_snowflake_db import create_database
 #  Logger Configs {{{ #
 logger = logging.getLogger("spider_agent")
 logger.setLevel(logging.DEBUG)
