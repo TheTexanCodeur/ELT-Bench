@@ -6,11 +6,8 @@ import time
 from typing import Callable, Any, Optional, Tuple
 
 from typing import List, Dict, Union
-from docker.models.containers import Container
-from docker.client import DockerClient
-from docker.errors import ImageNotFound
 import gymnasium as gym
-import shutil, pathlib, docker, time, copy
+import shutil, pathlib, time, copy
 from spider_agent.controllers.python import PythonController
 from spider_agent.controllers.setup import SetupController
 from spider_agent.envs.utils import *
@@ -27,12 +24,10 @@ Getter = Callable[[gym.Env, Dict[str, Any]], Any]
 
 
 # constants
-START_UP_DELAY = 2 # start up delay for docker container
 DEFAULT_TIME_OUT = 200 # default waiting time for each action
 MAX_OBS_LENGTH = 30000
 EMPTY_DATA_PATH = 'spider_agent/data/empty' # an empty data directory
-DEFAULT_IMAGE_DIR = 'spider_agent/images' # default directory to store docker images
-DEFAULT_WORK_DIR = '/workspace' # default working directory in the container
+DEFAULT_WORK_DIR = '/workspace' # default working directory
 DEFAULT_MNT_DIR = 'spider_agent/mnt' # default directory to copy and mount data path, also the output directory
 TASK_FINISHED = "task_finished" # infos key
 ACTION_EXEC = "action_executed" # infos key
@@ -72,10 +67,26 @@ class Spider_Agent_Env(gym.Env):
 
         self._set_task_info(task_config)
         logger.info("Initializing...")
-        self._construct_container()
         
-        self.controller = PythonController(container=self.container, work_dir=self.work_dir)
-        self.setup_controller = SetupController(container=self.container, cache_dir=self.cache_dir)
+        # Setup local working directory (no Docker container needed)
+        create_folder_if_not_exists(self.mnt_dir)
+        src_dir = pathlib.Path(self.mnt_dir).absolute().__str__()
+        
+        # Clean up existing files in the directory
+        try:
+            delete_files_in_folder(self.mnt_dir)
+        except PermissionError as e:
+            logger.warning(f"Permission error while cleaning {self.mnt_dir}: {e}")
+            logger.info("Attempting to continue anyway...")
+            # Don't fail completely, just warn and continue
+        
+        logger.info(f"Working directory set up at {src_dir}")
+        
+        # No container in local mode
+        self.container = None
+        
+        self.controller = PythonController(container=self.container, work_dir=self.mnt_dir, mnt_dir=self.mnt_dir)
+        self.setup_controller = SetupController(container=self.container, cache_dir=self.cache_dir, mnt_dir=self.mnt_dir)
         
         logger.info("Setting up environment...")
         
@@ -99,63 +110,14 @@ class Spider_Agent_Env(gym.Env):
         self.post_process_func = task_config["post_process"] if "post_process" in task_config else []
         
     def close(self):
-        self.container.stop()
-        self.container.remove()
-        logger.info(f"Container {self.container_name} stopped and removed.")
+        logger.info(f"Cleaning up working directory {self.mnt_dir}")
+        # No container to stop/remove in local mode
 
     def _cleanup(self, signum, frame):
-        if self.container:
-            self.container.remove(force=True)
-            print("remove container")
+        logger.info("Cleanup signal received")
+        # No container to remove in local mode
         sys.exit(0)
         
-    def _construct_container(self):
-        
-        client = docker.from_env()
-        container_name = self.container_name
-        #### delete existing container
-        try:
-            container = client.containers.get(container_name)
-            container.stop()
-            container.remove()
-            print(f"Container {container_name} stopped and removed.")
-        except docker.errors.NotFound:
-            pass
-        except docker.errors.APIError as e:
-            pass
-        
-        create_folder_if_not_exists(self.mnt_dir)
-        src_dir = pathlib.Path(self.mnt_dir).absolute().__str__()
-        delete_files_in_folder(self.mnt_dir)
-        
-        volumes = {src_dir: {'bind': self.work_dir, 'mode': 'rw'}}
-        allowed_params = ['command', 'ports', 'restart_policy', 'entrypoint', 'hostname', 'domainname', 'name', 'user', 'mac_address', 'platform', 'network_mode', 'network_disabled', 'healthcheck', "environment", "network"]
-        kwargs = {k: self.kwargs[k] for k in self.kwargs if k in allowed_params}
-        
-        extra_params = {'detach': True, 'tty': True, 'stdout': True, 'stderr': True, 'stdin_open': True, **kwargs}
-
-        try:
-            client: DockerClient = docker.from_env()
-            image = client.images.get(self.image_name)
-            self.container: Container = client.containers.run(image=image, volumes=volumes, **extra_params)
-        except ImageNotFound as e:
-            dockerfile_path = os.path.join(DEFAULT_IMAGE_DIR, self.image_name)
-            if os.path.exists(dockerfile_path):
-                logger.info(f"Image {self.image_name} not found, try to build from dockerfile {dockerfile_path} ...")
-                image = client.images.build(path=dockerfile_path, tag=self.image_name, rm=True)[0]
-            else:
-                logger.info(f"Image {self.image_name} not found, try to pull from Dockerhub ...")
-                image = client.images.pull(self.image_name)[0]
-            self.container: Container = client.containers.run(image=image, volumes=volumes, **extra_params)
-        except Exception as e:
-            logger.info(f"Failed to construct container from image {self.image_name} with error: {e}")
-            raise e
-
-        time.sleep(START_UP_DELAY)
-        logger.info(f"Connected to container[name={self.container.name}, id={self.container.id}] from image {self.image_name} ...")    
-        
-        return self.container
-
     def _get_env_files_hash(self) -> Dict[str, str]:
         """
         Returns:

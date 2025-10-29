@@ -2,22 +2,23 @@ import json
 import logging
 import random
 from typing import Any, Dict, Optional
-import docker
 import requests
 import os
 import ast
 import tempfile
 import platform
+import subprocess
 from spider_agent.agent.sql_template import LOCAL_SQL_TEMPLATE, BQ_GET_TABLES_TEMPLATE, BQ_GET_TABLE_INFO_TEMPLATE, BQ_SAMPLE_ROWS_TEMPLATE, BQ_EXEC_SQL_QUERY_TEMPLATE
 from spider_agent.agent.sql_template import SF_EXEC_SQL_QUERY_TEMPLATE, SF_GET_TABLE_INFO_TEMPLATE, SF_GET_TABLES_TEMPLATE, SF_SAMPLE_ROWS_TEMPLATE
 logger = logging.getLogger("spider_agent.pycontroller")
 
 
 class PythonController:
-    def __init__(self, container, work_dir="/workspace"):
+    def __init__(self, container, work_dir="/workspace", mnt_dir=None):
         self.container = container
-        self.mnt_dir = [mount['Source'] for mount in container.attrs['Mounts']][0]
-        self.work_dir = work_dir
+        # Use mnt_dir directly since we're working locally
+        self.mnt_dir = mnt_dir if mnt_dir else work_dir
+        self.work_dir = self.mnt_dir  # Work directory is the same as mount directory in local mode
         
         
     def get_file(self, file_path: str):
@@ -79,11 +80,11 @@ class PythonController:
         return self.execute_command(command)
     
     def execute_command(self, command: str):
-        cmd = ["bash", "-c", command]
-        exit_code, output = self.container.exec_run(cmd, workdir=self.work_dir)
-        ## can't create a new python environment in the container, eg. python3 -m venv /path/to/venv
+        """Execute command locally using subprocess instead of Docker."""
+        ## can't create a new python environment
         if "venv" in command:
-            return "Creating a new python environment is not allowed in the container. You can use 'pip install' to install the required packages."
+            return "Creating a new python environment is not allowed. You can use 'pip install' to install the required packages."
+        
         is_cd_flag = command.strip().startswith("cd ")
         if is_cd_flag:
             changed = command[command.index("cd ") + 3:].strip()
@@ -92,7 +93,23 @@ class PythonController:
             self.work_dir = self.update_working_directory(self.work_dir, changed)
             return f"The command to change directory to {self.work_dir} is executed successfully."
         
-        return output.decode("utf-8", errors="ignore").strip()
+        try:
+            # Execute command locally using subprocess
+            result = subprocess.run(
+                command,
+                shell=True,
+                cwd=self.work_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=300,  # 5 minute timeout
+                text=True
+            )
+            return result.stdout.strip() if result.stdout else ""
+        except subprocess.TimeoutExpired:
+            return "Command execution timed out after 5 minutes."
+        except Exception as e:
+            return f"Error executing command: {str(e)}"
+        
 
     def _file_exists(self, file_path: str) -> bool:
         check_command = f"test -f {file_path} && echo 'exists' || echo 'not exists'"
@@ -297,18 +314,8 @@ class PythonController:
     
 
 if __name__ == '__main__':
+    # Docker test code removed - not needed for local execution
+    # Use pytest or other testing framework for testing
+    pass
 
-    client = docker.from_env()
-    container_name = "spider_agent"
-    container = client.containers.get(container_name)
-    
-    
-    controller = PythonController(container)
-    # output = controller.create_file("models/orders_status.md", "aaaaaa")
-    # print(output)
-    
-    # content = controller.execute_command("cd models")
-    # print(content)
-    # content = controller.execute_command("ls")
-    # print(content)
     
