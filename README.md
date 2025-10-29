@@ -573,13 +573,13 @@ python eva.py --folder <folder_name> --example_index <range>
 
 **Examples:**
 
+```bash
 # Evaluate first 5 problems for testing
-```
 python eva.py --folder quick_test --example_index 0-4
 ```
 
+```bash
 # Evaluate specific problems
-```
 python eva.py --folder targeted_test --example_index 10,25,50,75
 ```
 
