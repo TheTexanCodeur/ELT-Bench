@@ -267,7 +267,6 @@ For each step, you must output an Action; it cannot be empty. The maximum number
 
 # Data Transformation Hints#
 1. Initialize the DBT Project: Set up a new DBT project by configuring it with {work_dir}/config.yaml, and remove the example directory under the models directory.
- • Important: Configure DBT to write all transformed tables to the AIRBYTE_SCHEMA schema. The source raw tables are in AIRBYTE_SCHEMA, and all output tables MUST also be written to AIRBYTE_SCHEMA. Do not create or use any other schema (such as ANALYTICS, DBT_SCHEMA, etc.).
 2. Understand the Data Model: Review data_model.yaml in {work_dir} to understand the required data models and their column descriptions. Then, write SQL queries to generate these defined data models, referring to the files in the {work_dir}/schemas directory to understand the schemas of source tables. If you have doubts about the schema, use SF_SAMPLE_ROWS to sample rows from the table.
  • Important: Write a separate query for each data model, and if using any DBT project variables, ensure they have already been declared.
 3. Validate Table Locations: Ensure all SQL queries reference the correct database and schema names for source tables. All source tables are located in AIRBYTE_SCHEMA. If you encounter a "table not found" error, refer to {work_dir}/config.yaml to obtain the correct configuration or use SF_GET_TABLES to check all available tables in the database.
