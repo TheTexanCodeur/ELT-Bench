@@ -90,6 +90,12 @@ class PythonController:
             if "&&" in changed:
                 changed = changed[:changed.index("&&")].strip()
             self.work_dir = self.update_working_directory(self.work_dir, changed)
+            
+            # If there are chained commands, combine directory message + output
+            if "&&" in command:
+                output_str = output.decode("utf-8", errors="ignore").strip()
+                return f"The command to change directory to {self.work_dir} is executed successfully.\n\n{output_str}"
+            
             return f"The command to change directory to {self.work_dir} is executed successfully."
         
         return output.decode("utf-8", errors="ignore").strip()
