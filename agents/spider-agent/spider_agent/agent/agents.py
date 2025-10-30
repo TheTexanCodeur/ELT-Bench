@@ -78,18 +78,27 @@ class PromptAgent:
             print("APPENDED HIGH REASONING")
             self.history_messages.append({
                 "role": "system",
-                "content": "Reasoning: high"
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Reasoning: high"
+                    },
+                    {
+                        "type": "text",
+                        "text": self.system_message 
+                    }
+                ]
             })
-        
-        self.history_messages.append({
-            "role": "system",
-            "content": [
-                {
-                    "type": "text",
-                    "text": self.system_message 
-                },
-            ]
-        })
+        else:
+            self.history_messages.append({
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": self.system_message 
+                    },
+                ]
+            })
         
     def predict(self, obs: Dict=None) -> List:
         """
