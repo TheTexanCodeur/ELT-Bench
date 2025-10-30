@@ -42,11 +42,11 @@ def call_llm(payload):
   stop = ["Observation:", "\n\n\n\n", "\n \n \n"]
   cost = 0
   
-  if model.startswith("gpt-oss-120b"):
+  if model.startswith("gpt-oss-120b") or model.startswith("qwen") or model.startswith("deepseek"):
     headers = {
         "Content-Type": "application/json"
     }
-    logger.info("Generating content with Qwen model: %s", model)
+    logger.info("Generating content with self-hosted model: %s", model)
 
     for i in range(3):
       try:
