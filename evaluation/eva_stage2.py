@@ -108,7 +108,7 @@ def evaluate_stage2(folder, example_index, snowflake_config):
                     df.to_csv(f'../data/results/{folder}/{db}/{table}.csv', index=False)
                     conn.close()
                 df = pd.read_csv(f'../data/results/{folder}/{db}/{table}.csv')
-                df_gt = pd.read_csv(f'../data/ground_truth/{db}/{table}.csv')
+                df_gt = pd.read_csv(f'../data/gt/{db}/{table}.csv')
                 check_corretness(df_gt, df)
             except Exception as e:
                 with open(f'../data/results/{folder}/stage2.log', 'a') as f:
