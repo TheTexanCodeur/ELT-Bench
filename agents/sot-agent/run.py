@@ -5,7 +5,7 @@ import logging
 import os
 from typing import List, Optional
 
-from sot_agent.agent import sot_pipeline
+from sot_agent.pipeline import sot_pipeline
 
 # ---------- logging ----------
 logger = logging.getLogger("sot_agent")
@@ -46,9 +46,9 @@ def filter_databases(databases: List[str], example_index: str) -> List[str]:
 
 def config() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run SoT agent on ELT-Bench (transform-only).")
-    parser.add_argument("--suffix", "-s", type=str, default="gpt-4o-try1")
-    parser.add_argument("--model", type=str, default="gpt-4o")
-    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--suffix", "-s", type=str, default="gpt-5-try1")
+    parser.add_argument("--model", type=str, default="gpt-5")
+    parser.add_argument("--temperature", type=float, default=1.0)
 
     # paths & selection
     parser.add_argument("--test_path", "-t", type=str, default="../../elt-bench")
@@ -93,14 +93,15 @@ def main():
     dbs = filter_databases(all_dbs, args.example_index)
     logger.info("Databases selected (%d): %s", len(dbs), dbs)
 
-    # inputs root for creds/configs
+    # inputs root for creds/configs & workspace files
     inputs_root = os.path.join(repo_root, "data", "inputs")
 
     for db in dbs:
-        creds_path = os.path.join(inputs_root, db, "snowflake_credential.json")
-        cfg_path = os.path.join(inputs_root, db, "config.yaml")
+        work_dir = os.path.join(inputs_root, db)  # workspace root for this problem
+        creds_path = os.path.join(work_dir, "snowflake_credential.json")
+        cfg_path = os.path.join(work_dir, "config.yaml")
 
-        # schema hint precedence: CLI --schema > config.yaml > None (auto-discover)
+        # schema hint precedence: CLI --schema > config.yaml > None
         schema_hint = args.schema or _get_schema_hint_from_config(cfg_path)
 
         # question heuristic
@@ -113,11 +114,12 @@ def main():
         ok, result, debug = sot_pipeline(
             question=question,
             creds_path=creds_path,
-            db_name=db,             # behave like spider-agent: database = folder name
-            schema_name=schema_hint,  # may be None; agent will auto-discover if needed
+            work_dir=work_dir,       # read workspace schema + model
+            db_name=db,              # behave like spider-agent: database = folder name
+            schema_name=schema_hint, # may be None; agent will auto-discover if needed
             model=args.model,
             temperature=args.temperature,
-            retry=2,
+            retry=3,
         )
 
         # write artifacts for this db
@@ -136,7 +138,6 @@ def main():
                 f,
                 indent=2,
             )
-        # also dump debugging info (schema list, plan, sql, last error)
         with open(os.path.join(out_dir, "sot_agent.log"), "w") as f:
             f.write(debug)
 
