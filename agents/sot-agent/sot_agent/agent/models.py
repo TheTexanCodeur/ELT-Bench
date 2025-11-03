@@ -68,16 +68,5 @@ class LLMClient:
             )
             return "".join([b.text for b in message.content if getattr(b, "type", "") == "text"])
             
-        elif model_to_use.startswith("accounts/fireworks/models/"):
-            from fireworks.client import Fireworks
-            fw = Fireworks()
-            resp = fw.chat.completions.create(
-                model=model_to_use, 
-                messages=[{"role": "user", "content": prompt}], 
-                temperature=temperature, 
-                max_tokens=max_tokens
-            )
-            return resp.choices[0].message.content
-            
         else:
             raise ValueError(f"Unknown or unsupported model: {model_to_use}")
