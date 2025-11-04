@@ -3,6 +3,7 @@ import json
 import re
 import os
 import glob
+import logging
 
 from .llm import call_llm
 from .snowflake_exec import run_sql, fetch_tables
@@ -17,6 +18,33 @@ from .agent import (
 )
 
 MAX_CRITIC_ATTEMPTS = 3
+
+# Setup logger for real-time output
+logger = logging.getLogger("sot_agent")
+
+
+# ---------- logging helper ----------
+
+def log_and_append(debug_lines: List[str], message: str, level: str = "info"):
+    """
+    Log message to terminal in real-time AND append to debug_lines for final output.
+    
+    Args:
+        debug_lines: List to accumulate messages
+        message: Message to log and append
+        level: Logging level ("info", "debug", "warning", "error")
+    """
+    debug_lines.append(message)
+    
+    # Log to terminal based on level
+    if level == "debug":
+        logger.debug(message)
+    elif level == "warning":
+        logger.warning(message)
+    elif level == "error":
+        logger.error(message)
+    else:
+        logger.info(message)
 
 
 # ---------- minimal SoT-compatible helpers ----------
@@ -241,8 +269,8 @@ def sot_pipeline(
     Returns: (ok, result_or_error, debug_log)
     """
     debug_lines: List[str] = []
-    debug_lines.append(f"DB: {db_name}, SCHEMA_HINT: {schema_name}, MODEL: {model}, TEMP: {temperature}")
-    debug_lines.append(f"WORK_DIR: {work_dir}")
+    log_and_append(debug_lines, f"DB: {db_name}, SCHEMA_HINT: {schema_name}, MODEL: {model}, TEMP: {temperature}")
+    log_and_append(debug_lines, f"WORK_DIR: {work_dir}")
 
     # 0) Build schema context = WORKSPACE + SNOWFLAKE
     ws_schema = _schema_string_from_workspace(work_dir)
@@ -250,9 +278,15 @@ def sot_pipeline(
     schema_context = "\n\n".join(
         [s for s in [ws_schema, "SNOWFLAKE TABLES (active context):\n" + sf_schema if sf_schema else ""] if s]
     ).strip()
+    
+    log_and_append(debug_lines, "=== SCHEMA CONTEXT FROM WORKSPACE ===")
+    log_and_append(debug_lines, ws_schema if ws_schema else "<EMPTY>")
+    
+    log_and_append(debug_lines, "=== SCHEMA CONTEXT FROM SNOWFLAKE ===")
+    log_and_append(debug_lines, sf_schema if sf_schema else "<EMPTY>")
 
-    debug_lines.append("=== SCHEMA_CONTEXT ===")
-    debug_lines.append(schema_context if schema_context else "<EMPTY>")
+    log_and_append(debug_lines, "=== SCHEMA_CONTEXT ===")
+    log_and_append(debug_lines, schema_context if schema_context else "<EMPTY>")
 
     # Initialize LLM client wrapper
     llm_client = LLMClient(call_llm_func=call_llm)
@@ -267,40 +301,40 @@ def sot_pipeline(
 
     # 1) Schema Linking Agent
     corrected_schema = schema_agent.link(question, schema_context, model=model, temperature=temperature)
-    debug_lines.append("=== SCHEMA_AGENT_OUTPUT ===")
-    debug_lines.append(corrected_schema)
+    log_and_append(debug_lines, "=== SCHEMA_AGENT_OUTPUT ===")
+    log_and_append(debug_lines, corrected_schema)
 
     # 2) Subproblem Agent
     sub_json = subproblem_agent.decompose(question, corrected_schema, model=model, temperature=temperature)
-    debug_lines.append("=== SUBPROBLEM_OUTPUT ===")
-    debug_lines.append(json.dumps(sub_json, indent=2) if isinstance(sub_json, (dict, list)) else str(sub_json))
+    log_and_append(debug_lines, "=== SUBPROBLEM_OUTPUT ===")
+    log_and_append(debug_lines, json.dumps(sub_json, indent=2) if isinstance(sub_json, (dict, list)) else str(sub_json))
 
     # 3) Query Plan Agent
     plan = plan_agent.plan(question, corrected_schema, sub_json, model=model, temperature=temperature)
-    debug_lines.append("=== PLAN_OUTPUT ===")
-    debug_lines.append(plan)
+    log_and_append(debug_lines, "=== PLAN_OUTPUT ===")
+    log_and_append(debug_lines, plan)
 
     # 4) SQL Agent
     sql_raw = sql_agent.generate(question, plan, corrected_schema, model=model, temperature=temperature)
     sql = postprocess_sql(sql_raw)
-    debug_lines.append("=== SQL_ATTEMPT_1 ===")
-    debug_lines.append(sql)
+    log_and_append(debug_lines, "=== SQL_ATTEMPT_1 ===")
+    log_and_append(debug_lines, sql)
 
     # 5) Execute + Correction Loop
     ok, out = run_sql(creds_path, sql, database=db_name, schema=schema_name)
     attempts = 0
     while (not ok) and attempts < retry:
         attempts += 1
-        debug_lines.append(f"=== EXEC_ERROR_{attempts} ===")
-        debug_lines.append(str(out))
+        log_and_append(debug_lines, f"=== EXEC_ERROR_{attempts} ===", level="warning")
+        log_and_append(debug_lines, str(out), level="error")
 
         # Create correction plan
         correction_plan = correction_plan_agent.create_plan(
             question, sql, corrected_schema, database_error=str(out),
             model=model, temperature=temperature
         )
-        debug_lines.append(f"=== CORRECTION_PLAN_OUTPUT_{attempts} ===")
-        debug_lines.append(correction_plan)
+        log_and_append(debug_lines, f"=== CORRECTION_PLAN_OUTPUT_{attempts} ===")
+        log_and_append(debug_lines, correction_plan)
 
         # Generate corrected SQL
         corrected_sql_raw = correction_sql_agent.generate(
@@ -308,17 +342,16 @@ def sot_pipeline(
             model=model, temperature=temperature
         )
         sql = postprocess_sql(corrected_sql_raw)
-        debug_lines.append(f"=== SQL_ATTEMPT_{attempts+1} ===")
-        debug_lines.append(sql)
+        log_and_append(debug_lines, f"=== SQL_ATTEMPT_{attempts+1} ===")
+        log_and_append(debug_lines, sql)
 
         ok, out = run_sql(creds_path, sql, database=db_name, schema=schema_name)
 
     if ok:
-        debug_lines.append("=== FINAL_SQL ===")
-        debug_lines.append(sql)
+        log_and_append(debug_lines, "=== FINAL_SQL ===")
+        log_and_append(debug_lines, sql)
         return True, sql, "\n".join(debug_lines)
 
-    debug_lines.append("=== FINAL_ERROR ===")
-    debug_lines.append(str(out))
-    print("".join(debug_lines))
+    log_and_append(debug_lines, "=== FINAL_ERROR ===", level="error")
+    log_and_append(debug_lines, str(out), level="error")
     return False, str(out), "\n".join(debug_lines)
