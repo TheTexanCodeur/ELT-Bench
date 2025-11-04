@@ -69,9 +69,11 @@ def _get_schema_hint_from_config(cfg_path: str) -> Optional[str]:
             with open(cfg_path, "r") as f:
                 cfg = yaml.safe_load(f) or {}
             return (
-                cfg.get("destination", {}).get("snowflake", {}).get("schema")
+                cfg.get("snowflake", {}).get("config", {}).get("schema")
+                or cfg.get("destination", {}).get("snowflake", {}).get("schema")
                 or cfg.get("snowflake", {}).get("schema")
                 or cfg.get("schema")
+
             )
     except Exception:
         pass
@@ -103,6 +105,8 @@ def main():
 
         # schema hint precedence: CLI --schema > config.yaml > None
         schema_hint = args.schema or _get_schema_hint_from_config(cfg_path)
+        
+        logger.info("Schema hint for %s: %s", db, schema_hint)
 
         # question heuristic
         question = (
