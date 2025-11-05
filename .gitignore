@@ -6,4 +6,5 @@ agents/spider-agent/output/*
 *.zip
 *.pyc
 **/*.pyc
+**/__pycache__/
 data/*

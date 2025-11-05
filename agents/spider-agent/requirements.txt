@@ -1,4 +1,3 @@
-docker
 flaml
 transformers
 openai

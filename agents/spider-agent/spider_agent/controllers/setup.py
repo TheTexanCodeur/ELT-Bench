@@ -8,8 +8,7 @@ from typing import Any, Union, Optional
 from typing import Dict, List
 import uuid
 import requests
-import docker
-import shutil
+import subprocess
 from spider_agent import configs
 
 
@@ -18,10 +17,11 @@ logger = logging.getLogger("spider_agent.setup")
 
 
 class SetupController:
-    def __init__(self, container, cache_dir):
+    def __init__(self, container, cache_dir, mnt_dir=None):
         self.cache_dir = cache_dir
         self.container = container
-        self.mnt_dir = [mount['Source'] for mount in container.attrs['Mounts']][0]
+        # Use mnt_dir directly since we're working locally
+        self.mnt_dir = mnt_dir if mnt_dir else cache_dir
         
     def setup(self, config: List[Dict[str, Any]]):
         """
@@ -104,8 +104,20 @@ class SetupController:
     def _execute_setup(self, command: str):
         """
         Args:
-            command (List[str]): the command to execute on the VM
+            command (str): the command to execute locally
         """
-        cmd = ["sh", "-c", command]
-        exit_code, output = self.container.exec_run(cmd)
-        return output.decode("utf-8").strip()
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                cwd=self.mnt_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=300,
+                text=True
+            )
+            return result.stdout.strip() if result.stdout else ""
+        except subprocess.TimeoutExpired:
+            return "Command execution timed out after 5 minutes."
+        except Exception as e:
+            return f"Error executing command: {str(e)}"
