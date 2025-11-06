@@ -25,9 +25,10 @@ class SchemaLinkingAgent:
             temperature: LLM temperature
             
         Returns:
+            String with the prompt used
             String with relevant table and column links
         """
         from .. import prompts
         
         prompt = prompts.alt_schema_linking_agent_prompt(question, schema_context)
-        return self.llm.complete(prompt, model=model, temperature=temperature)
+        return prompt , self.llm.complete(prompt, model=model, temperature=temperature)
