@@ -146,6 +146,35 @@ def _read_json_schemas(work_dir: str) -> str:
                 buf.append(line)
     return "\n".join(buf)
 
+def _read_csv_schemas(work_dir: str) -> str:
+    buf = []
+    schema_dir = os.path.join(work_dir, "schemas")
+    for path in sorted(glob.glob(os.path.join(schema_dir, "*.CSV"))):
+        try:
+            with open(path) as csvfile:
+                reader = csv.reader(csvfile)
+                
+                #Skip header
+                next(reader, None)
+                
+                #Add the name of the file without the file extension
+                filename_without_ext = os.path.splitext(os.path.basename(path))[0]
+                buf.append(f"[SCHEMA]: {filename_without_ext}")
+                
+                # process CSV content
+                for row in reader:
+                    line = ": ".join(row)
+                    buf.append(line)
+                    
+                # Break line to separate files
+                buf.append("")
+                          
+        except Exception:
+            continue 
+        
+    return "\n".join(buf)
+           
+
 
 def _read_yaml(path: str) -> dict:
     try:
@@ -235,7 +264,7 @@ def _render_data_model(work_dir: str) -> str:
 def _schema_string_from_workspace(work_dir: str) -> str:
     parts = []
 
-    ws = _read_json_schemas(work_dir)
+    ws = _read_csv_schemas(work_dir)
     if ws:
         parts.append("WORKSPACE SCHEMAS:")
         parts.append(ws)
