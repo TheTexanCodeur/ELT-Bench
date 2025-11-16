@@ -112,7 +112,7 @@ def main():
         question = (
             args.question
             or "Data is already loaded in Snowflake. Focus ONLY on the transform stage and "
-               "generate the final tables defined in data_model.yaml using the loaded source tables."
+               "generate the final tables defined in the DATA MODEL part using the loaded source tables."
         )
 
         ok, result, debug = sot_pipeline(

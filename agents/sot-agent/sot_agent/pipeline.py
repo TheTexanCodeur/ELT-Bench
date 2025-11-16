@@ -175,7 +175,6 @@ def _read_csv_schemas(work_dir: str) -> str:
     return "\n".join(buf)
            
 
-
 def _read_yaml(path: str) -> dict:
     try:
         import yaml
@@ -185,7 +184,6 @@ def _read_yaml(path: str) -> dict:
     except Exception:
         return {}
     return {}
-
 
 def _render_data_model(work_dir: str) -> str:
     """
@@ -259,6 +257,27 @@ def _render_data_model(work_dir: str) -> str:
 
     return "\n".join(lines)
 
+def _custom_render_data_model(work_dir: str) -> str:
+    dm = _read_yaml(os.path.join(work_dir, "data_model.yaml"))
+    if not dm:
+        return ""
+    buf = []
+    
+    #Get the "models" key and iterate over it
+    for model in dm.get("models", []):
+        #Add the name of the model
+        buf.append(f"[TARGET]: {model.get('name','')} ({model.get('description','No description')})")
+        
+        #Iterate over the columns
+        for column in model.get("columns", []):
+            #Add the column name and description
+            buf.append(f"{column.get('name','')}: {column.get('description','No description')}")
+        
+        #Add a blank line to separate models
+        buf.append("")
+    
+
+    return "\n".join(buf)
 
 
 def _schema_string_from_workspace(work_dir: str) -> str:
@@ -269,7 +288,7 @@ def _schema_string_from_workspace(work_dir: str) -> str:
         parts.append("WORKSPACE SCHEMAS:")
         parts.append(ws)
 
-    dm = _render_data_model(work_dir)
+    dm = _custom_render_data_model(work_dir)
     if dm:
         parts.append("\nDATA MODEL (targets):")
         parts.append(dm)
