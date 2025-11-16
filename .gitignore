@@ -2,6 +2,7 @@
 *.log
 *.vscode
 agents/spider-agent/output/*
+agents/spider-web/output/*
 *.env
 *.zip
 *.pyc
