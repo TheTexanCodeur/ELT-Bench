@@ -23,20 +23,7 @@ MAX_OBS_LENGTH = 30000
 class PythonController:
     def __init__(self, work_dir="/workspace"):
         self.work_dir = work_dir
-        
-    def get_file(self, file_path: str):
-        """
-        Gets a file from the docker container.
-        """    
-        real_file_path = os.path.join(self.mnt_dir, file_path.replace("/workspace/",""))
-        try:
-            with open(real_file_path, 'r') as file:
-                file_content = file.read()
-        except FileNotFoundError:
-            print("File not found:", file_path)
-        except Exception as e:
-            print("An error occurred:", str(e))
-        return file_content
+
 
     def _wrap_with_print(self, command):
         # Parse the command as an AST (Abstract Syntax Tree)
@@ -53,6 +40,7 @@ class PythonController:
             return f"print({command})"
         else:
             return command
+    
         
     def _input_multiline_function(self):
         lines = []
@@ -62,6 +50,7 @@ class PythonController:
                 break
             lines.append(line)
         return "\n".join(lines)
+
 
     def execute_python_code(self, action: str) -> None:
         try:
@@ -76,14 +65,16 @@ class PythonController:
             observation = f"Error executing action: {err}"
         return observation
 
+
     def _execute_python_code(self, code: str) -> str:
         temp_file_path = "/tmp/temp_script.py"
         code = code.replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
         command = f'echo """{code}""" > {temp_file_path} && python3 {temp_file_path}'
         return self.execute_command(command)
     
+    
     def execute_command(self, command: str):
-        ## can't create a new python environment, eg. python3 -m venv /path/to/venv
+        # Can't create a new python environment, eg. python3 -m venv /path/to/venv
         if "venv" in command:
             return "Creating a new python environment is not allowed. You can use 'pip install' to install the required packages."
         
@@ -124,10 +115,12 @@ class PythonController:
         else:
             return result.stderr.strip() if result.stderr else result.stdout.strip()
 
+
     def _file_exists(self, file_path: str) -> bool:
         check_command = f"test -f {file_path} && echo 'exists' || echo 'not exists'"
         result = self.execute_command(check_command)
         return result.strip() == 'exists'
+    
     
     def execute_python_file(self, file_path: str, content: str):
         escaped_content = content.replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
@@ -143,6 +136,7 @@ class PythonController:
         create_command = f'echo "{escaped_content}" > {file_path} && python3 {file_path}'
         return self.execute_command(create_command)
     
+    
     def execute_sql_code(self,file_path, code, output: str) -> str:
         if code.startswith('""') and code.endswith('""'):
             code = code[2:-2]
@@ -153,6 +147,7 @@ class PythonController:
         if observation.startswith(f'File "{temp_file_path}"'):
             observation = observation.split("\n", 1)[1]
         return observation
+    
     
     def execute_bq_exec_sql_query(self, action):
         sql_query, is_save = action.sql_query, action.is_save
@@ -168,6 +163,7 @@ class PythonController:
             observation = observation.split("\n", 1)[1]
         return observation
     
+    
     def execute_sf_exec_sql_query(self, action):
         sql_query, is_save = action.sql_query, action.is_save
         save_path = getattr(action, 'save_path', "")
@@ -182,6 +178,7 @@ class PythonController:
             observation = observation.split("\n", 1)[1]
         return observation
     
+    
     def execute_sf_get_tables(self, action):
         database_name, schema_name, save_path = action.database_name, action.schema_name, action.save_path 
         script_content = SF_GET_TABLES_TEMPLATE.format(database_name=database_name, schema_name=schema_name, save_path=save_path)
@@ -191,6 +188,7 @@ class PythonController:
         if observation.startswith(f'File "{temp_file_path}"'):
             observation = observation.split("\n", 1)[1]
         return observation
+    
     
     def execute_sf_get_table_info(self, action):
         database_name, schema_name, table, save_path = action.database_name, action.schema_name, action.table, action.save_path
@@ -203,6 +201,7 @@ class PythonController:
             observation = observation.split("\n", 1)[1]
         return observation
     
+    
     def execute_sf_sample_rows(self, action):
         database_name, schema_name, table, row_number, save_path = action.database_name, action.schema_name, action.table, action.row_number, action.save_path
         script_content = SF_SAMPLE_ROWS_TEMPLATE.format(
@@ -213,7 +212,6 @@ class PythonController:
         if observation.startswith(f'File "{temp_file_path}"'):
             observation = observation.split("\n", 1)[1]
         return observation
-
 
     
     def execute_bq_get_tables(self, action):
@@ -226,6 +224,7 @@ class PythonController:
             observation = observation.split("\n", 1)[1]
         return observation
     
+    
     def execute_bq_get_table_info(self, action):
         database_name, dataset_name, table, save_path = action.database_name, action.dataset_name, action.table, action.save_path
         script_content = BQ_GET_TABLE_INFO_TEMPLATE.format(
@@ -237,6 +236,7 @@ class PythonController:
             observation = observation.split("\n", 1)[1]
         return observation
 
+
     def execute_bq_sample_rows(self, action):
         database_name, dataset_name, table, row_number, save_path = action.database_name, action.dataset_name, action.table, action.row_number, action.save_path
         script_content = BQ_SAMPLE_ROWS_TEMPLATE.format(
@@ -247,9 +247,7 @@ class PythonController:
         if observation.startswith(f'File "{temp_file_path}"'):
             observation = observation.split("\n", 1)[1]
         return observation
-    
-    
-    
+
     
     def create_file(self, file_path: str, content: str):
         escaped_content = content.replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
@@ -271,6 +269,7 @@ class PythonController:
 
         return self.execute_command(create_command)
 
+
     def edit_file(self, file_path: str, content: str):
         escaped_content = content.replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
 
@@ -285,16 +284,16 @@ class PythonController:
         return self.execute_command(edit_command)
 
     
-    def get_real_file_path(self, file_path: str):
-        if not file_path.startswith(self.work_dir): # if the filepath is not absolute path, then it is a relative path
-            if file_path.startswith("./"): file_path = file_path[2:]
-            file_path = os.path.join(self.work_dir.rstrip('/'), file_path)
+    # def get_real_file_path(self, file_path: str):
+    #     if not file_path.startswith(self.work_dir): # if the filepath is not absolute path, then it is a relative path
+    #         if file_path.startswith("./"): file_path = file_path[2:]
+    #         file_path = os.path.join(self.work_dir.rstrip('/'), file_path)
 
-        if platform.system() == 'Windows':
-            real_file_path = os.path.join(self.mnt_dir, file_path.replace('/workspace\\',""))
-        else:
-            real_file_path = os.path.join(self.mnt_dir, file_path.replace("/workspace/",""))     
-        return real_file_path
+    #     if platform.system() == 'Windows':
+    #         real_file_path = os.path.join(self.mnt_dir, file_path.replace('/workspace\\',""))
+    #     else:
+    #         real_file_path = os.path.join(self.mnt_dir, file_path.replace("/workspace/",""))     
+    #     return real_file_path
     
     
     def get_current_workdir(self):
@@ -355,8 +354,8 @@ class PythonController:
     def create_file_action(self, action: CreateFile):
         obs = self.create_file(action.filepath, action.code)
         if obs is None or obs == '':
-            real_file_path = self.get_real_file_path(action.filepath)
-            valid, error = is_file_valid(real_file_path)
+            #real_file_path = self.get_real_file_path(action.filepath)
+            valid, error = is_file_valid(action.filepath)
             if valid:
                 obs = f"File {action.filepath} created and written successfully."
             else:
@@ -367,8 +366,8 @@ class PythonController:
     def edit_file_action(self, action: EditFile):
         obs = self.edit_file(action.filepath, action.code)
         if obs is None or obs == '':
-            real_file_path = self.get_real_file_path(action.filepath)
-            valid, error = is_file_valid(real_file_path)
+            #real_file_path = self.get_real_file_path(action.filepath)
+            valid, error = is_file_valid(action.filepath)
             if valid:
                 obs = f"File {action.filepath} edited successfully."
             else:
