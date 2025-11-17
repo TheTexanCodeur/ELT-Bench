@@ -23,7 +23,7 @@ logger = logging.getLogger("spider_web")
 class PromptAgent:
     def __init__(
         self,
-        agent_name,
+        name: str,
         work_dir: str,
         instruction: str,
         model="gpt-4",
@@ -35,7 +35,7 @@ class PromptAgent:
         use_plan=False,
         plan: str = "",
     ):
-        
+        self.name = name
         self.model = model
         self.max_tokens = max_tokens
         self.top_p = top_p

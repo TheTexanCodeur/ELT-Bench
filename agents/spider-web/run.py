@@ -103,6 +103,20 @@ def filter_databases(databases, example_index):
     except ValueError:
         logger.warning(f"Invalid example_index format: {example_index}")
         return databases
+    
+def run_spider(agent, post_processor, output_dir):
+    post_processor.set_files_hash()
+    done, result_output = agent.run()
+    trajectory = agent.get_trajectory()
+    
+    os.makedirs(os.path.join(output_dir, agent.name), exist_ok=True)
+    result_files = post_processor.post_process()
+    spider_result = {"finished": done, "steps": len(trajectory["trajectory"]),
+                        "result": result_output,"result_files": result_files, **trajectory}
+    
+    with open(os.path.join(output_dir, f"{agent.name}/result.json"), "w") as f:
+        json.dump(spider_result, f, indent=2)
+    
 
 def test(
     args: argparse.Namespace,
@@ -156,11 +170,15 @@ def test(
         # Copy all the input files to output dir
         os.system(f"cp -r {os.path.join(args.test_path, db)}/* {output_dir}/")
         
+        #Initialize PostProcessor
+        post_processor = PostProcessor(wrk_dir=output_dir)
+        
         # Run a foo spider with simple prompt
         foo_instruction = "Forget the task, just list all files in the current directory and then terminate."
+        logger.info('Task input:' + foo_instruction)
         
         foo_agent = PromptAgent(
-        agent_name="FOO_AGENT",
+        name="foo_spider",
         work_dir=output_dir,
         instruction=foo_instruction,
         model=args.model,
@@ -171,18 +189,7 @@ def test(
         use_plan=args.plan
         )
         
-        logger.info('Task input:' + foo_instruction)
-        done, result_output = foo_agent.run()
-        trajectory = foo_agent.get_trajectory()
-        
-        post_processor = PostProcessor(wrk_dir=output_dir)
-        
-        os.makedirs(os.path.join(output_dir, "foo_spider"), exist_ok=True)
-        result_files = post_processor.post_process()
-        spider_result = {"finished": done, "steps": len(trajectory["trajectory"]),
-                           "result": result_output,"result_files": result_files, **trajectory}
-        with open(os.path.join(output_dir, "foo_spider/result.json"), "w") as f:
-            json.dump(spider_result, f, indent=2)
+        run_spider(foo_agent, post_processor, output_dir)
         
         logger.info("Finished %s", instance_id)
         

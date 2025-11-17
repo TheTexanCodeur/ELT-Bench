@@ -70,7 +70,11 @@ class PostProcessor:
     def __init__(self, wrk_dir: str):
         self.wrk_dir = wrk_dir
         self.init_files_hash = self._get_env_files_hash()
-    
+        
+        
+    def set_files_hash(self):
+        self.init_files_hash = self._get_env_files_hash()
+        
         
     def _get_env_files_hash(self) -> Dict[str, str]:
         """
