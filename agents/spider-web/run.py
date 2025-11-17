@@ -7,6 +7,7 @@ import sys
 
 from tqdm import tqdm
 from spiders.agents import PromptAgent
+from spiders.utils import PostProcessor
 
 #  Logger Configs {{{ #
 logger = logging.getLogger("spider_web")
@@ -155,8 +156,7 @@ def test(
         # Copy all the input files to output dir
         os.system(f"cp -r {os.path.join(args.test_path, db)}/* {output_dir}/")
         
-        # Run a foo spider with prompt agent
-        
+        # Run a foo spider with simple prompt
         foo_instruction = "Forget the task, just list all files in the current directory and then terminate."
         
         foo_agent = PromptAgent(
@@ -173,8 +173,16 @@ def test(
         
         logger.info('Task input:' + foo_instruction)
         done, result_output = foo_agent.run()
-      
-
+        trajectory = foo_agent.get_trajectory()
+        
+        post_processor = PostProcessor(wrk_dir=output_dir)
+        
+        os.makedirs(os.path.join(output_dir, "foo_spider"), exist_ok=True)
+        result_files = post_processor.post_process()
+        spider_result = {"finished": done, "steps": len(trajectory["trajectory"]),
+                           "result": result_output,"result_files": result_files, **trajectory}
+        with open(os.path.join(output_dir, "foo_spider/result.json"), "w") as f:
+            json.dump(spider_result, f, indent=2)
         
         logger.info("Finished %s", instance_id)
         

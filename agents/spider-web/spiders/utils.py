@@ -66,4 +66,46 @@ def calculate_sha256(file_path):
         file_data = f.read()
         return hashlib.sha256(file_data).hexdigest()
 
-
+class PostProcessor:
+    def __init__(self, wrk_dir: str):
+        self.wrk_dir = wrk_dir
+        self.init_files_hash = self._get_env_files_hash()
+    
+        
+    def _get_env_files_hash(self) -> Dict[str, str]:
+        """
+        Returns:
+            Dict[str, str]: a dictionary of the hash of the files in the
+              environment
+        """
+        files_hash = {}
+        for root, dirs, files in os.walk(self.wrk_dir):
+            for f in files:
+                file_path = os.path.join(root, f)
+                files_hash[file_path] = calculate_sha256(file_path)
+        return files_hash
+        
+        
+    def _find_diff_files_init(self, init_file_dict)-> Dict:
+        init_file_paths = init_file_dict.keys()
+        added_files_list = []
+        changed_files_list = []
+        for root, dirs, files in os.walk(self.wrk_dir):
+            for f in files:
+                file_path = os.path.join(root, f)
+                if file_path not in init_file_paths:
+                    added_files_list.append(file_path)
+                else:
+                    if init_file_dict[file_path] != calculate_sha256(file_path):
+                        changed_files_list.append(file_path)
+        return {"added_files": added_files_list, "changed_files": changed_files_list}
+    
+    
+    def post_process(self):
+        """
+        Evaluate whether the task is successfully completed.
+        """
+        diff_files = self._find_diff_files_init(self.init_files_hash)
+        
+        return {**diff_files}
+    
