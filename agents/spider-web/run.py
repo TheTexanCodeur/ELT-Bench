@@ -109,12 +109,12 @@ def run_spider(agent, post_processor, output_dir):
     done, result_output = agent.run()
     trajectory = agent.get_trajectory()
     
-    os.makedirs(os.path.join(output_dir, agent.name), exist_ok=True)
+    os.makedirs(agent.name, exist_ok=True)
     result_files = post_processor.post_process()
     spider_result = {"finished": done, "steps": len(trajectory["trajectory"]),
                         "result": result_output,"result_files": result_files, **trajectory}
     
-    with open(os.path.join(output_dir, f"{agent.name}/result.json"), "w") as f:
+    with open(f"{agent.name}/result.json", "w") as f:
         json.dump(spider_result, f, indent=2)
     
 
@@ -142,6 +142,9 @@ def test(
     logger.info(f"Processing {len(databases)} databases: {databases}")
 
     for db in databases:
+        
+        ### INITIALIZATION STEPS ###
+        
         instance_id = experiment_id +"/"+ db
         output_dir = os.path.join(args.output_dir, instance_id)
         result_json_path =os.path.join(output_dir, "elt/result.json")
@@ -170,26 +173,30 @@ def test(
         # Copy all the input files to output dir
         os.system(f"cp -r {os.path.join(args.test_path, db)}/* {output_dir}/")
         
+        # Change working directory to output dir
+        os.chdir(output_dir)
+        
         #Initialize PostProcessor
         post_processor = PostProcessor(wrk_dir=output_dir)
         
-        # Run a foo spider with simple prompt
-        foo_instruction = "Forget the task, just list all files in the current directory and then terminate."
-        logger.info('Task input:' + foo_instruction)
+        ### AGENT ORCHESTRATION STEPS ###
         
-        foo_agent = PromptAgent(
-        name="foo_spider",
-        work_dir=output_dir,
-        instruction=foo_instruction,
+        
+        query_plan_spider_instruction = "Your task is to focus ONLY on creating the transformation query plan: analyze the data model requirements and source schemas to create a comprehensive query plan that will guide subsequent SQL development. Create a detailed .txt file outlining how source tables should be transformed into the final data models defined in data_model.yaml. Do NOT write actual SQL queries - focus on the high-level transformation logic, data flow, and dependencies."
+        logger.info('Task input:' + query_plan_spider_instruction)
+        
+        query_plan_spider_agent = PromptAgent(
+        name="query_plan_spider",
+        instruction=query_plan_spider_instruction,
         model=args.model,
         top_p=args.top_p,
         temperature=args.temperature,
         max_memory_length=args.max_memory_length,
-        max_steps=args.max_steps,
+        max_steps=15,
         use_plan=args.plan
         )
         
-        run_spider(foo_agent, post_processor, output_dir)
+        run_spider(query_plan_spider_agent, post_processor, output_dir)
         
         logger.info("Finished %s", instance_id)
         

@@ -9,7 +9,7 @@ import uuid
 from http import HTTPStatus
 from io import BytesIO
 from typing import Dict, List
-from spiders.prompts import BIGQUERY_SYSTEM, LOCAL_SYSTEM, DBT_SYSTEM, SNOWFLAKE_SYSTEM, CH_SYSTEM, PG_SYSTEM,REFERENCE_PLAN_SYSTEM, ELT_SYSTEM
+from spiders.prompts import BIGQUERY_SYSTEM, LOCAL_SYSTEM, DBT_SYSTEM, SNOWFLAKE_SYSTEM, CH_SYSTEM, PG_SYSTEM,REFERENCE_PLAN_SYSTEM, ELT_SYSTEM, QUERY_PLAN_SPIDER_SYSTEM
 from spiders.action import Action, Bash, Terminate, CreateFile, EditFile, LOCAL_DB_SQL, BIGQUERY_EXEC_SQL, SNOWFLAKE_EXEC_SQL, BQ_GET_TABLES, BQ_GET_TABLE_INFO, BQ_SAMPLE_ROWS, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS
 from spiders.models import call_llm
 from spiders.controller import PythonController
@@ -24,9 +24,9 @@ class PromptAgent:
     def __init__(
         self,
         name: str,
-        work_dir: str,
         instruction: str,
         model="gpt-4",
+        work_dir: str = "./",
         max_tokens=1500,
         top_p=0.9,
         temperature=0.5,
@@ -57,11 +57,13 @@ class PromptAgent:
         self.reference_plan = ""
         
         self.instruction = instruction
+        
+        self.system_prompts = {"query_plan_spider": QUERY_PLAN_SPIDER_SYSTEM,}
      
         self._AVAILABLE_ACTION_CLASSES = [Bash, Terminate, CreateFile, EditFile, SNOWFLAKE_EXEC_SQL, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS]
         
         action_space = "".join([action_cls.get_action_description() for action_cls in self._AVAILABLE_ACTION_CLASSES])
-        self.system_message = ELT_SYSTEM.format(work_dir=self.work_dir, action_space=action_space, task=self.instruction, max_steps=self.max_steps)
+        self.system_message = self.system_prompts[self.name].format(work_dir=self.work_dir, action_space=action_space, task=self.instruction, max_steps=self.max_steps)
 
         if self.use_plan:
             self.reference_plan = plan
