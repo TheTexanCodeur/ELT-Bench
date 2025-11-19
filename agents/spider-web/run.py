@@ -109,12 +109,12 @@ def run_spider(agent, post_processor, output_dir):
     done, result_output = agent.run()
     trajectory = agent.get_trajectory()
     
-    os.makedirs(agent.name, exist_ok=True)
+    os.makedirs(f"trajectories/{agent.name}", exist_ok=True)
     result_files = post_processor.post_process()
     spider_result = {"finished": done, "steps": len(trajectory["trajectory"]),
                         "result": result_output,"result_files": result_files, **trajectory}
     
-    with open(f"{agent.name}/result.json", "w") as f:
+    with open(f"trajectories/{agent.name}/result.json", "w") as f:
         json.dump(spider_result, f, indent=2)
     
 
@@ -183,7 +183,7 @@ def test(
         
         
         query_plan_spider_instruction = "Your task is to focus ONLY on creating the transformation query plan: analyze the data model requirements and source schemas to create a comprehensive query plan that will guide subsequent SQL development. Create a detailed .txt file outlining how source tables should be transformed into the final data models defined in data_model.yaml. Do NOT write actual SQL queries - focus on the high-level transformation logic, data flow, and dependencies."
-        logger.info('Task input:' + query_plan_spider_instruction)
+        logger.info('Task input for query plan spider:' + query_plan_spider_instruction)
         
         query_plan_spider_agent = PromptAgent(
         name="query_plan_spider",
@@ -196,11 +196,32 @@ def test(
         use_plan=args.plan
         )
         
+        # Generate Query Plan
+        logger.info("Starting query plan spider for %s", instance_id)
         run_spider(query_plan_spider_agent, post_processor, output_dir)
+        logger.info("Query plan spider finished for %s", instance_id)
+        
+        sql_spider_instruction = "Your task is to generate the SQL queries based on the provided query plan. Carefully read the query_plan.txt file created by the previous agent, and translate each step of the plan into executable SQL statements that will transform the source data into the desired data models as specified in data_model.yaml. Ensure that the SQL queries are efficient, accurate, and adhere to best practices for database operations."
+        logger.info('Task input for sql spider:' + sql_spider_instruction)
+        
+        sql_spider_agent = PromptAgent(
+        name="sql_spider",
+        instruction=sql_spider_instruction,
+        model=args.model,
+        top_p=args.top_p,
+        temperature=args.temperature,
+        max_memory_length=args.max_memory_length,
+        max_steps=15,
+        use_plan=args.plan
+        )
+        
+        # Generate SQL Queries
+        logger.info("Starting SQL spider for %s", instance_id)
+        run_spider(sql_spider_agent, post_processor, output_dir)
+        logger.info("SQL spider finished for %s", instance_id)
         
         logger.info("Finished %s", instance_id)
-        
-
+    
 
 if __name__ == '__main__':
     args = config()

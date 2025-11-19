@@ -9,7 +9,7 @@ import uuid
 from http import HTTPStatus
 from io import BytesIO
 from typing import Dict, List
-from spiders.prompts import BIGQUERY_SYSTEM, LOCAL_SYSTEM, DBT_SYSTEM, SNOWFLAKE_SYSTEM, CH_SYSTEM, PG_SYSTEM,REFERENCE_PLAN_SYSTEM, ELT_SYSTEM, QUERY_PLAN_SPIDER_SYSTEM
+from spiders.prompts import BIGQUERY_SYSTEM, LOCAL_SYSTEM, DBT_SYSTEM, SNOWFLAKE_SYSTEM, CH_SYSTEM, PG_SYSTEM,REFERENCE_PLAN_SYSTEM, ELT_SYSTEM, QUERY_PLAN_SPIDER_SYSTEM, SQL_SPIDER_SYSTEM
 from spiders.action import Action, Bash, Terminate, CreateFile, EditFile, LOCAL_DB_SQL, BIGQUERY_EXEC_SQL, SNOWFLAKE_EXEC_SQL, BQ_GET_TABLES, BQ_GET_TABLE_INFO, BQ_SAMPLE_ROWS, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS
 from spiders.models import call_llm
 from spiders.controller import PythonController
@@ -58,7 +58,7 @@ class PromptAgent:
         
         self.instruction = instruction
         
-        self.system_prompts = {"query_plan_spider": QUERY_PLAN_SPIDER_SYSTEM,}
+        self.system_prompts = {"query_plan_spider": QUERY_PLAN_SPIDER_SYSTEM, "sql_spider": SQL_SPIDER_SYSTEM}
      
         self._AVAILABLE_ACTION_CLASSES = [Bash, Terminate, CreateFile, EditFile, SNOWFLAKE_EXEC_SQL, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS]
         
