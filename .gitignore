@@ -1,10 +1,15 @@
 *.DS_Store
 *.log
 *.vscode
+<<<<<<< HEAD
 agents/spider-agent/output/*
 agents/spider-web/output/*
+=======
+agents/**/output/*
+>>>>>>> origin
 *.env
 *.zip
 *.pyc
 **/*.pyc
 data/*
+**/__pycache__/**

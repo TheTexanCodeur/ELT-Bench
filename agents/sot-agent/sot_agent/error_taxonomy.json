@@ -1,0 +1,25 @@
+{
+  "schema": {
+    "mismatch": "References to non-existent tables/columns or ambiguous names."
+  },
+  "join": {
+    "logic_error": "Missing, wrong, or unnecessary JOINs.",
+    "missing_table": "A required table is not joined.",
+    "wrong_column": "JOIN uses incorrect columns."
+  },
+  "filter": {
+    "condition_error": "Incorrect WHERE/HAVING condition or operator."
+  },
+  "aggregation": {
+    "grouping_error": "GROUP BY/HAVING misuse with aggregates."
+  },
+  "select": {
+    "output_error": "Wrong projection/ordering/aliasing in SELECT."
+  },
+  "syntax": {
+    "structural_error": "Clause order or SQL syntax problem."
+  },
+  "intent": {
+    "semantic_error": "Query doesn't capture the question's requirement."
+  }
+}

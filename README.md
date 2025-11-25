@@ -242,7 +242,7 @@ Downloads three ZIP files to `setup/`:
 ```bash
 unzip data_api.zip -d ../data/source/api     # → data/source/api/
 unzip data_db.zip -d ../data/source/db       # → data/source/db/
-unzip gt.zip -d ../data/ground_truth         # → data/ground_truth/
+unzip gt.zip -d ../data/gt         # → data/gt/
 ```
 
 #### Step 3: Generate Working Directories (`write_config.py`)
@@ -319,7 +319,7 @@ ELT-Bench/
 | **`elt-bench/`** | Benchmark definitions (100 problems) | ❌ Read-only | ✅ Yes |
 | **`data/inputs/`** | Agent working environment | ✅ Agents modify | ❌ No (gitignored) |
 | **`data/source/`** | Source data files (extracted from ZIPs) | ❌ Read-only | ❌ No (gitignored) |
-| **`data/ground_truth/`** | Expected outputs for validation | ❌ Read-only | ❌ No (gitignored) |
+| **`data/gt/`** | Expected outputs for validation | ❌ Read-only | ❌ No (gitignored) |
 | **`data/results/`** | Evaluation outputs | ✅ Written by `eva.py` | ❌ No (gitignored) |
 | **`setup/`** | Setup scripts & credential templates | 👤 User fills credentials | ✅ Yes (except ZIPs) |
 | **`evaluation/`** | Evaluation scripts & SQL queries | ❌ Framework code | ✅ Yes |
@@ -342,7 +342,7 @@ elt-bench/<problem>/          →  (write_config.py)  →  data/inputs/<problem>
                                                       └── snowflake_credential.json (new)
 
 setup/data_*.zip              →  (extracted)      →  data/source/{api,db}/
-setup/gt.zip                  →  (extracted)      →  data/ground_truth/
+setup/gt.zip                  →  (extracted)      →  data/gt/
 ```
 ## Workflow Overview
 
@@ -369,7 +369,7 @@ The complete ELT-Bench workflow consists of three phases:
                            ↓
           data/inputs/ ready for agents
           AIRBYTE_SCHEMA populated with source tables
-          data/ground_truth/ populated with expected outputs
+          data/gt/ populated with expected outputs
 ```
 
 ### Phase 2: Agent Execution (Iterative)
@@ -402,7 +402,7 @@ The complete ELT-Bench workflow consists of three phases:
 │ 1. Stage 1: Source Table Validation                        │
 │    ├── Connects to Snowflake                               │
 │    ├── Queries source tables in AIRBYTE_SCHEMA             │
-│    ├── Compares vs data/ground_truth/<problem>/*.csv       │
+│    ├── Compares vs data/gt/<problem>/*.csv       │
 │    └── Logs to data/results/<folder>/eval_<problem>/stage1.log │
 ├─────────────────────────────────────────────────────────────┤
 │ 2. Stage 2: Transformation Validation                       │
@@ -426,7 +426,7 @@ Snowflake           (AIRBYTE_SCHEMA - reads source, writes target)
     ↓ queried by
 evaluation/         (validation scripts + SQL queries)
     ↓ compares against
-data/ground_truth/  (expected outputs)
+data/gt/  (expected outputs)
     ↓ results written to
 data/results/       (evaluation logs & scores)
 ```
@@ -506,7 +506,7 @@ bash elt_setup.sh
    - `data_api.zip` - API source data
    - `data_db.zip` - Database source data
    - `gt.zip` - Ground truth validation data
-2. Extracts archives to `data/source/` and `data/ground_truth/`
+2. Extracts archives to `data/source/` and `data/gt/`
 3. Runs `write_config.py` to generate `data/inputs/` with Snowflake credentials
 
 **Expected output structure:**
