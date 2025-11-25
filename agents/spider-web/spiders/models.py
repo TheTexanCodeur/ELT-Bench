@@ -650,3 +650,7 @@ def call_llm(payload):
         time.sleep(10 * (2 ** (i + 1)))
         code_value = "context_length_exceeded"
     return False, code_value, cost
+
+  # Fallback: if model didn't match any known providers, return a clear error tuple instead of None
+  logger.error("call_llm invoked with unknown model or unsupported configuration: %s", model)
+  return False, "unknown_model", 0
