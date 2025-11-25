@@ -1,9 +1,10 @@
 *.DS_Store
 *.log
 *.vscode
-agents/spider-agent/output/*
+agents/**/output/*
 *.env
 *.zip
 *.pyc
 **/*.pyc
 data/*
+**/__pycache__/**

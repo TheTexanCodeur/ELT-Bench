@@ -12,15 +12,12 @@ gdown 'https://drive.google.com/uc?id=11vQqNEWXoPG6sjKytAn7TtFLDMiQa17I'
 #Create the necessary folders
 mkdir -p ../data/source/api
 mkdir -p ../data/source/db
-mkdir -p ../data/ground_truth
 
 #Unzip the data used in the benchmark
 unzip data_api.zip -d ../data/source/api
 unzip data_db.zip -d ../data/source/db
-unzip gt.zip -d ../data/ground_truth
+unzip gt.zip -d ../data
 
-cd ../elt-docker
-docker compose up -d
 docker network create -d bridge elt-docker_elt_network
 
 ###NOT NECESSARY FOR THE EL STAGE###
