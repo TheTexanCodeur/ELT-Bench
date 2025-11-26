@@ -79,7 +79,7 @@ def config() -> argparse.Namespace:
     parser.add_argument("--ch_only", action="store_true")
     parser.add_argument("--pg_only", action="store_true")
     # retry behavior
-    parser.add_argument("--max_retries", type=int, default=3, help="Maximum number of retry attempts for dbt run on failure")
+    parser.add_argument("--max_retries", type=int, default=5, help="Maximum number of retry attempts for dbt run on failure")
     
     args = parser.parse_args()
 
