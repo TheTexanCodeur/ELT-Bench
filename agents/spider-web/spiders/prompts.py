@@ -473,8 +473,6 @@ ISSUE 1:
 ISSUE 2:
 ...
 
-FINAL CHECK:
-- "Run dbt run again after applying the above fixes."
 ----------------------------------------------------------
 
 Your corrections must be:
