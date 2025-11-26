@@ -9,7 +9,7 @@ import uuid
 from http import HTTPStatus
 from io import BytesIO
 from typing import Dict, List
-from spiders.prompts import REFERENCE_PLAN_SYSTEM, QUERY_PLAN_SPIDER_SYSTEM, SQL_SPIDER_SYSTEM
+from spiders.prompts import QUERY_PLAN_SPIDER_SYSTEM, SQL_SPIDER_SYSTEM
 from spiders.action import Action, Bash, Terminate, CreateFile, EditFile, LOCAL_DB_SQL, BIGQUERY_EXEC_SQL, SNOWFLAKE_EXEC_SQL, BQ_GET_TABLES, BQ_GET_TABLE_INFO, BQ_SAMPLE_ROWS, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS
 from spiders.models import call_llm
 from spiders.controller import PythonController
@@ -32,8 +32,6 @@ class PromptAgent:
         temperature=0.5,
         max_memory_length=10,
         max_steps=15,
-        use_plan=False,
-        plan: str = "",
     ):
         self.name = name
         self.model = model
@@ -53,8 +51,6 @@ class PromptAgent:
         self.system_message = ""
         self.history_messages = []
         self.codes = []
-        self.use_plan = use_plan
-        self.reference_plan = ""
         
         self.instruction = instruction
         
@@ -65,10 +61,6 @@ class PromptAgent:
         action_space = "".join([action_cls.get_action_description() for action_cls in self._AVAILABLE_ACTION_CLASSES])
         self.system_message = self.system_prompts[self.name].format(work_dir=self.work_dir, action_space=action_space, task=self.instruction, max_steps=self.max_steps)
 
-        if self.use_plan:
-            self.reference_plan = plan
-            self.system_message += REFERENCE_PLAN_SYSTEM.format(plan=self.reference_plan)
-            
         if self.model.startswith("gpt-oss-120b"):
             print("APPENDED HIGH REASONING")
             self.history_messages.append({

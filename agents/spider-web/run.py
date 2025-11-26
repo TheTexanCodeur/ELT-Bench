@@ -72,7 +72,6 @@ def config() -> argparse.Namespace:
 
     # output related
     parser.add_argument("--output_dir", type=str, default="output")
-    parser.add_argument("--plan", action="store_true")
     parser.add_argument("--bq_only", action="store_true")
     parser.add_argument("--local_only", action="store_true")
     parser.add_argument("--dbt_only", action="store_true")
@@ -135,9 +134,7 @@ def test(
         experiment_id = args.model.split("/")[-1]
     else:
         experiment_id = args.model.split("/")[-1] + "-" + args.suffix
-        
-    if args.plan:
-        experiment_id = f"{experiment_id}-plan"
+
         
     databases = [f.name for f in os.scandir('../../elt-bench') if f.is_dir()]
     databases.sort()
@@ -189,14 +186,13 @@ def test(
         logger.info('Task input for query plan spider:' + query_plan_spider_instruction)
         
         query_plan_spider_agent = PromptAgent(
-        name="query_plan_spider",
-        instruction=query_plan_spider_instruction,
-        model=args.model,
-        top_p=args.top_p,
-        temperature=args.temperature,
-        max_memory_length=args.max_memory_length,
-        max_steps=15,
-        use_plan=args.plan
+          name="query_plan_spider",
+          instruction=query_plan_spider_instruction,
+          model=args.model,
+          top_p=args.top_p,
+          temperature=args.temperature,
+          max_memory_length=args.max_memory_length,
+          max_steps=15,
         )
         
         # Generate Query Plan
@@ -208,14 +204,13 @@ def test(
         logger.info('Task input for sql spider:' + sql_spider_instruction)
         
         sql_spider_agent = PromptAgent(
-        name="sql_spider",
-        instruction=sql_spider_instruction,
-        model=args.model,
-        top_p=args.top_p,
-        temperature=args.temperature,
-        max_memory_length=args.max_memory_length,
-        max_steps=15,
-        use_plan=args.plan
+          name="sql_spider",
+          instruction=sql_spider_instruction,
+          model=args.model,
+          top_p=args.top_p,
+          temperature=args.temperature,
+          max_memory_length=args.max_memory_length,
+          max_steps=15,
         )
         
         # Generate SQL Queries
