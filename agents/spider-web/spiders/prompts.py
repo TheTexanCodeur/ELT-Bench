@@ -319,7 +319,6 @@ It MUST contain:
 4. model-paths: ["sql"]
 5. models:
        <project_name>:
-           +schema: <UPPERCASE schema from config.yaml>
            +materialized: view
            # Each model name (derived from SQL filenames) may appear implicitly
 
