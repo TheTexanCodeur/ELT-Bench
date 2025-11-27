@@ -268,27 +268,31 @@ def test(
         logger.info("DBT agent finished for %s", instance_id) 
 
         ##################################################
-        #         ELT Execution + Correction Loop        #
+        #         ELT Execution Correction Loop          #
         ##################################################
         max_attempts = max(1, int(args.max_retries))  
         attempt = 1
+
         while attempt <= max_attempts:
             logger.info("Starting ELT execution (attempt %d) for %s", attempt, instance_id)
             exit_code = os.system("dbt run")
-            # On POSIX, os.system returns the exit status; 0 means success
             success = (exit_code == 0)
+
             if success:
                 logger.info("ELT execution succeeded on attempt %d for %s", attempt, instance_id)
                 break
-            logger.info("ELT execution failed on attempt %d for %s (exit_code=%d)", attempt, instance_id, exit_code)
+
+            logger.info("ELT execution failed on attempt %d for %s (exit_code=%d)", 
+                        attempt, instance_id, exit_code)
 
             if attempt == max_attempts:
-                logger.info("Reached max attempts (%d), stopping", max_attempts)
+                logger.info("Reached max attempts (%d), stopping execution phase.", max_attempts)
                 break
 
-            logger.info("Retries remaining: %d. Starting correction loop for %s", max_attempts - attempt, instance_id)
+            logger.info("Retries remaining: %d. Starting execution correction loop for %s",
+                        max_attempts - attempt, instance_id)
 
-            # correction plan spider function is to create a correction plan based on dbt run logs
+            ### EXECUTION CORRECTION PLAN SPIDER
             correction_plan_spider_instruction = """Your task is to create or update exactly one file: correction_plan.txt.
             You must analyze dbt run logs in ./logs/dbt.log, SQL models in ./sql/, and
             dbt configuration files, then identify the root cause of the failure.
@@ -302,18 +306,15 @@ def test(
             - MINIMAL changes only
             - Never create new schemas, tables, directories, or filenames
 
-            Follow the system prompt rules strictly.
-            """
-
-            logger.info('Task input for correction plan spider:' + correction_plan_spider_instruction)
+            Follow the system prompt rules strictly.)"""
             correction_plan_spider_agent = PromptAgent(
-              name="correction_plan_spider",
-              instruction=correction_plan_spider_instruction,
-              model=args.model,
-              top_p=args.top_p,
-              temperature=args.temperature,
-              max_memory_length=args.max_memory_length,
-              max_steps=15,
+                name="correction_plan_spider",
+                instruction=correction_plan_spider_instruction,
+                model=args.model,
+                top_p=args.top_p,
+                temperature=args.temperature,
+                max_memory_length=args.max_memory_length,
+                max_steps=15,
             )
 
             # Generate Correction Plan
@@ -343,13 +344,13 @@ def test(
             """
 
             correction_spider_agent = PromptAgent(
-              name="correction_spider",
-              instruction=correction_spider_instruction,
-              model=args.model,  
-              top_p=args.top_p,
-              temperature=args.temperature,
-              max_memory_length=args.max_memory_length,
-              max_steps=15,
+                name="correction_spider",
+                instruction=correction_spider_instruction,
+                model=args.model,
+                top_p=args.top_p,
+                temperature=args.temperature,
+                max_memory_length=args.max_memory_length,
+                max_steps=15,
             )
 
             # Generate Corrected SQL Queries
@@ -358,6 +359,114 @@ def test(
             logger.info("Correction SQL spider finished for %s", instance_id)
 
             attempt += 1
+
+        logger.info("Execution correction phase completed for %s", instance_id)
+
+
+        ##################################################
+        #          SEMANTIC VERIFICATION LOOP            #
+        ##################################################
+        if success:
+            logger.info("Starting semantic verification phase for %s", instance_id)
+
+            for sem_iter in range(1, args.max_retries + 1):
+
+                ### VERIFICATION SPIDER
+                verification_instruction = """
+                Your task is to perform semantic verification of the dbt-generated models.
+
+                You MUST:
+                - Read config.yaml to identify the correct database and schema.
+                - Discover model names by listing the ./sql/ directory.
+                - For EACH model, sample rows directly from Snowflake
+                - Read these sample files using ReadFile or Bash to analyze the values.
+
+                You MUST check for:
+                - Schema consistency with data_model.yaml
+                - Structural correctness (row uniqueness, fanout, missing rows)
+                - Logical correctness (flags, ratios, aggregations)
+                - Value-level consistency (null handling, numeric sanity)
+                - Cross-model alignment when applicable
+
+                You MUST produce exactly one file: verification_report.txt
+                using CreateFile or EditFile.
+
+                The report MUST NOT propose fixes.
+                It MUST only describe observed issues with evidence from samples.
+
+                Follow the system prompt rules strictly.
+                """
+                verification_spider_agent = PromptAgent(
+                    name="verification_spider",
+                    instruction=verification_instruction,
+                    model=args.model,
+                    top_p=args.top_p,
+                    temperature=args.temperature,
+                    max_memory_length=args.max_memory_length,
+                    max_steps=15,
+                )
+                run_spider(verification_spider_agent, post_processor, output_dir)
+
+                # read verification report
+                report_path = "verification_report.txt"
+                if not os.path.exists(report_path):
+                    logger.warning("verification_report.txt missing; assuming PASS.")
+                    break
+
+                with open(report_path) as f:
+                    report = f.read()
+
+                if "overall_status: PASS" in report:
+                    logger.info("Semantic verification PASSED for %s", instance_id)
+                    break
+
+                logger.info("Semantic verification FAILED (iteration %d).", sem_iter)
+
+                ### SEMANTIC CORRECTION PLAN SPIDER
+                sem_plan_instruction = """Your task is to create semantic correction plan 
+                based on the verification_report.txt.
+                You MUST write a deterministic, step-by-step correction plan:
+                - NO SQL execution
+                - NO speculative fixes
+                - EXACT file paths
+                - EXACT line ranges or anchor text
+                - EXACT replace/insert/delete operations
+                - MINIMAL changes only
+                - Never create new schemas, tables, directories, or filenames
+                Follow the system prompt rules strictly.
+                """
+                sem_plan_agent = PromptAgent(
+                    name="semantic_correction_plan_spider",
+                    instruction=sem_plan_instruction,
+                    model=args.model,
+                    top_p=args.top_p,
+                    temperature=args.temperature,
+                    max_memory_length=args.max_memory_length,
+                    max_steps=15,
+                )
+                run_spider(sem_plan_agent, post_processor, output_dir)
+
+                ### CORRECTION SPIDER (semantic)
+                correction_spider_agent = PromptAgent(
+                    name="correction_spider",
+                    instruction=correction_spider_instruction,
+                    model=args.model,
+                    top_p=args.top_p,
+                    temperature=args.temperature,
+                    max_memory_length=args.max_memory_length,
+                    max_steps=15,
+                )
+                run_spider(correction_spider_agent, post_processor, output_dir)
+
+                ### Re-run dbt
+                logger.info("Re-running dbt after semantic corrections.")
+                exit_code = os.system("dbt run")
+                if exit_code != 0:
+                    logger.info("dbt failed after semantic corrections; stopping semantic loop.")
+                    break
+
+            logger.info("Semantic verification phase completed for %s", instance_id)
+
         logger.info("Finished %s", instance_id)
 
 
