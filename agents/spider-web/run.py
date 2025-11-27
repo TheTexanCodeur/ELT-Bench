@@ -289,7 +289,21 @@ def test(
             logger.info("Retries remaining: %d. Starting correction loop for %s", max_attempts - attempt, instance_id)
 
             # correction plan spider function is to create a correction plan based on dbt run logs
-            correction_plan_spider_instruction = "Your task is to analyze the dbt run logs in ./logs/dbt.log and create a detailed correction plan to address any errors or issues encountered during the execution. Review the logs carefully to identify the root causes of failures, and outline specific steps to correct them. The correction plan should include modifications to SQL queries, DBT configurations, or any other relevant components necessary to ensure successful execution in the next attempt."
+            correction_plan_spider_instruction = """Your task is to create or update exactly one file: correction_plan.txt.
+            You must analyze dbt run logs in ./logs/dbt.log, SQL models in ./sql/, and
+            dbt configuration files, then identify the root cause of the failure.
+
+            You must write a deterministic, step-by-step correction plan:
+            - NO SQL execution
+            - NO speculative fixes
+            - EXACT file paths
+            - EXACT line ranges or anchor text
+            - EXACT replace/insert/delete operations
+            - MINIMAL changes only
+            - Never create new schemas, tables, directories, or filenames
+
+            Follow the system prompt rules strictly.
+            """
 
             logger.info('Task input for correction plan spider:' + correction_plan_spider_instruction)
             correction_plan_spider_agent = PromptAgent(
