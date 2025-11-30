@@ -201,7 +201,7 @@ def dbt_correction_loop(args, post_processor, output_dir, max_retries, instance_
     return success
 
 
-def semantic_verification_loop(args, post_processor, output_dir, max_retries, instance_id):
+def semantic_verification_loop(args, post_processor, output_dir, max_retries, instance_id, max_dbt_correction_attempts=2):
     """
     Run semantic verification and correction loop on successful dbt execution.
     
@@ -211,6 +211,7 @@ def semantic_verification_loop(args, post_processor, output_dir, max_retries, in
         output_dir: Directory where dbt project is located
         max_retries: Maximum number of verification/correction iterations
         instance_id: Unique identifier for this instance (for logging)
+        max_dbt_correction_attempts: Maximum times to call dbt_correction_loop if dbt fails (default: 2)
     
     Returns:
         bool: True if verification passed, False otherwise
@@ -246,15 +247,35 @@ def semantic_verification_loop(args, post_processor, output_dir, max_retries, in
         correction_spider_agent = make_agent("correction_spider", args.model, args)
         run_spider(correction_spider_agent, post_processor, output_dir)
 
-        ### Re-run dbt
-        logger.info("Re-running dbt after semantic corrections.")
-        exit_code = os.system("dbt run")
-        if exit_code != 0:
-            logger.info("dbt failed after semantic corrections; stopping semantic loop.")
-            return False
-
     logger.info("Semantic verification phase completed for %s", instance_id)
-    return False
+    
+    ### Re-run dbt after all semantic corrections
+    logger.info("Re-running dbt after semantic corrections.")
+    dbt_attempts = 0
+    success = False
+    
+    while dbt_attempts < max_dbt_correction_attempts:
+        exit_code = os.system("dbt run")
+        success = (exit_code == 0)
+        
+        if success:
+            logger.info("dbt run succeeded after semantic corrections.")
+            break
+            
+        dbt_attempts += 1
+        logger.info("dbt failed after semantic corrections (attempt %d/%d).", 
+                    dbt_attempts, max_dbt_correction_attempts)
+        
+        if dbt_attempts < max_dbt_correction_attempts:
+            logger.info("Calling dbt_correction_loop to fix dbt errors.")
+            success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
+            if success:
+                logger.info("dbt_correction_loop succeeded.")
+                break
+        else:
+            logger.info("Reached max dbt correction attempts; stopping semantic loop.")
+    
+    return success
 
 def test(
     args: argparse.Namespace,
