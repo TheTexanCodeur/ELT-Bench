@@ -144,8 +144,61 @@ def run_spider(agent, post_processor, output_dir):
         json.dump(spider_result, f, indent=2)
     
 
-def dbt_correction_loop(post_processor, output_dir, max_retries):
-    pass  # Placeholder for potential future implementation
+def dbt_correction_loop(args, post_processor, output_dir, max_retries, instance_id):
+    """
+    Execute dbt with automatic correction loop on failure.
+    
+    Args:
+        args: Command line arguments containing model configuration
+        post_processor: PostProcessor instance for handling file operations
+        output_dir: Directory where dbt project is located
+        max_retries: Maximum number of retry attempts
+        instance_id: Unique identifier for this instance (for logging)
+    
+    Returns:
+        bool: True if dbt execution succeeded, False otherwise
+    """
+    max_attempts = max(1, int(max_retries))  
+    attempt = 1
+    success = False
+
+    while attempt <= max_attempts:
+        logger.info("Starting ELT execution (attempt %d) for %s", attempt, instance_id)
+        exit_code = os.system("dbt run")
+        success = (exit_code == 0)
+
+        if success:
+            logger.info("ELT execution succeeded on attempt %d for %s", attempt, instance_id)
+            break
+
+        logger.info("ELT execution failed on attempt %d for %s (exit_code=%d)", 
+                    attempt, instance_id, exit_code)
+
+        if attempt == max_attempts:
+            logger.info("Reached max attempts (%d), stopping execution phase.", max_attempts)
+            break
+
+        logger.info("Retries remaining: %d. Starting execution correction loop for %s",
+                    max_attempts - attempt, instance_id)
+
+        ### EXECUTION CORRECTION PLAN SPIDER
+        # Generate Correction Plan
+        logger.info("Starting correction plan spider for %s", instance_id)
+        correction_plan_spider_agent = make_agent("correction_plan_spider", args.model, args)
+        run_spider(correction_plan_spider_agent, post_processor, output_dir)
+        logger.info("Correction plan spider finished for %s", instance_id)
+
+        # correction spider function is to implement the corrections based on the correction plan
+        # Apply corrections based on the correction plan
+        logger.info("Starting correction spider for %s", instance_id)
+        correction_spider_agent = make_agent("correction_spider", args.model, args)
+        run_spider(correction_spider_agent, post_processor, output_dir)
+        logger.info("Correction spider finished for %s", instance_id)
+
+        attempt += 1
+
+    logger.info("Execution correction phase completed for %s", instance_id)
+    return success
 
 def test(
     args: argparse.Namespace,
@@ -244,46 +297,7 @@ def test(
         ##################################################
         #         ELT Execution Correction Loop          #
         ##################################################
-        max_attempts = max(1, int(args.max_retries))  
-        attempt = 1
-
-        while attempt <= max_attempts:
-            logger.info("Starting ELT execution (attempt %d) for %s", attempt, instance_id)
-            exit_code = os.system("dbt run")
-            success = (exit_code == 0)
-
-            if success:
-                logger.info("ELT execution succeeded on attempt %d for %s", attempt, instance_id)
-                break
-
-            logger.info("ELT execution failed on attempt %d for %s (exit_code=%d)", 
-                        attempt, instance_id, exit_code)
-
-            if attempt == max_attempts:
-                logger.info("Reached max attempts (%d), stopping execution phase.", max_attempts)
-                break
-
-            logger.info("Retries remaining: %d. Starting execution correction loop for %s",
-                        max_attempts - attempt, instance_id)
-
-            ### EXECUTION CORRECTION PLAN SPIDER
-            # Generate Correction Plan
-            logger.info("Starting correction plan spider for %s", instance_id)
-            correction_plan_spider_agent = make_agent("correction_plan_spider", args.model, args)
-            run_spider(correction_plan_spider_agent, post_processor, output_dir)
-            logger.info("Correction plan spider finished for %s", instance_id)
-
-
-            # correction spider function is to implement the corrections based on the correction plan
-            # Apply corrections based on the correction plan
-            logger.info("Starting correction spider for %s", instance_id)
-            correction_spider_agent = make_agent("correction_spider", args.model, args)
-            run_spider(correction_spider_agent, post_processor, output_dir)
-            logger.info("Correction spider finished for %s", instance_id)
-
-            attempt += 1
-
-        logger.info("Execution correction phase completed for %s", instance_id)
+        success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
 
 
         ##################################################
