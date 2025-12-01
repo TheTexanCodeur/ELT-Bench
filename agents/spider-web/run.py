@@ -4,10 +4,18 @@ import json
 import logging
 import os
 import sys
+import yaml
 
 from tqdm import tqdm
 from spiders.agents import PromptAgent
 from spiders.utils import PostProcessor
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+INSTRUCTIONS_PATH = os.path.join(BASE_DIR, "spiders", "instructions.yml")
+
+with open(INSTRUCTIONS_PATH) as f:
+    INSTRUCTIONS = yaml.safe_load(f)
+
 
 #  Logger Configs {{{ #
 logger = logging.getLogger("spider_web")
@@ -108,6 +116,20 @@ def filter_databases(databases, example_index):
         logger.warning(f"Invalid example_index format: {example_index}")
         return databases
     
+def make_agent(name: str, model: str, args, **extra_kwargs):
+    
+        
+    return PromptAgent(
+        name=name,
+        instruction=INSTRUCTIONS[name]["instruction"],
+        model=model,
+        top_p=args.top_p,
+        temperature=args.temperature,
+        max_memory_length=args.max_memory_length,
+        max_steps=INSTRUCTIONS[name].get("max_steps", 15),
+        **extra_kwargs,
+    )
+
 def run_spider(agent, post_processor, output_dir):
     post_processor.set_files_hash()
     done, result_output = agent.run()
@@ -121,6 +143,139 @@ def run_spider(agent, post_processor, output_dir):
     with open(f"trajectories/{agent.name}/result.json", "w") as f:
         json.dump(spider_result, f, indent=2)
     
+
+def dbt_correction_loop(args, post_processor, output_dir, max_retries, instance_id):
+    """
+    Execute dbt with automatic correction loop on failure.
+    
+    Args:
+        args: Command line arguments containing model configuration
+        post_processor: PostProcessor instance for handling file operations
+        output_dir: Directory where dbt project is located
+        max_retries: Maximum number of retry attempts
+        instance_id: Unique identifier for this instance (for logging)
+    
+    Returns:
+        bool: True if dbt execution succeeded, False otherwise
+    """
+    max_attempts = max(1, int(max_retries))  
+    attempt = 1
+    success = False
+
+    while attempt <= max_attempts:
+        logger.info("Starting ELT execution (attempt %d) for %s", attempt, instance_id)
+        exit_code = os.system("dbt run")
+        success = (exit_code == 0)
+
+        if success:
+            logger.info("ELT execution succeeded on attempt %d for %s", attempt, instance_id)
+            break
+
+        logger.info("ELT execution failed on attempt %d for %s (exit_code=%d)", 
+                    attempt, instance_id, exit_code)
+
+        if attempt == max_attempts:
+            logger.info("Reached max attempts (%d), stopping execution phase.", max_attempts)
+            break
+
+        logger.info("Retries remaining: %d. Starting execution correction loop for %s",
+                    max_attempts - attempt, instance_id)
+
+        ### EXECUTION CORRECTION PLAN SPIDER
+        # Generate Correction Plan
+        logger.info("Starting correction plan spider for %s", instance_id)
+        correction_plan_spider_agent = make_agent("correction_plan_spider", args.model, args)
+        run_spider(correction_plan_spider_agent, post_processor, output_dir)
+        logger.info("Correction plan spider finished for %s", instance_id)
+
+        # correction spider function is to implement the corrections based on the correction plan
+        # Apply corrections based on the correction plan
+        logger.info("Starting correction spider for %s", instance_id)
+        correction_spider_agent = make_agent("correction_spider", args.model, args)
+        run_spider(correction_spider_agent, post_processor, output_dir)
+        logger.info("Correction spider finished for %s", instance_id)
+
+        attempt += 1
+
+    logger.info("Execution correction phase completed for %s", instance_id)
+    return success
+
+
+def semantic_verification_loop(args, post_processor, output_dir, max_retries, instance_id, max_dbt_correction_attempts=2):
+    """
+    Run semantic verification and correction loop on successful dbt execution.
+    
+    Args:
+        args: Command line arguments containing model configuration
+        post_processor: PostProcessor instance for handling file operations
+        output_dir: Directory where dbt project is located
+        max_retries: Maximum number of verification/correction iterations
+        instance_id: Unique identifier for this instance (for logging)
+        max_dbt_correction_attempts: Maximum times to call dbt_correction_loop if dbt fails (default: 2)
+    
+    Returns:
+        bool: True if verification passed, False otherwise
+    """
+    logger.info("Starting semantic verification phase for %s", instance_id)
+
+    for sem_iter in range(1, max_retries + 1):
+
+        ### VERIFICATION SPIDER
+        verification_spider_agent = make_agent("verification_spider", args.model, args)
+        run_spider(verification_spider_agent, post_processor, output_dir)
+
+        # read verification report
+        report_path = "verification_report.txt"
+        if not os.path.exists(report_path):
+            logger.warning("verification_report.txt missing; assuming PASS.")
+            return True
+
+        with open(report_path) as f:
+            report = f.read()
+
+        if "overall_status: PASS" in report:
+            logger.info("Semantic verification PASSED for %s", instance_id)
+            return True
+
+        logger.info("Semantic verification FAILED (iteration %d).", sem_iter)
+
+        ### SEMANTIC CORRECTION PLAN SPIDER
+        sem_plan_agent = make_agent("sem_correction_plan_spider", args.model, args)
+        run_spider(sem_plan_agent, post_processor, output_dir)
+
+        ### CORRECTION SPIDER (semantic)
+        correction_spider_agent = make_agent("correction_spider", args.model, args)
+        run_spider(correction_spider_agent, post_processor, output_dir)
+
+    logger.info("Semantic verification phase completed for %s", instance_id)
+    
+    ### Re-run dbt after all semantic corrections
+    logger.info("Re-running dbt after semantic corrections.")
+    dbt_attempts = 0
+    success = False
+    
+    while dbt_attempts < max_dbt_correction_attempts:
+        exit_code = os.system("dbt run")
+        success = (exit_code == 0)
+        
+        if success:
+            logger.info("dbt run succeeded after semantic corrections.")
+            break
+            
+        dbt_attempts += 1
+        logger.info("dbt failed after semantic corrections (attempt %d/%d).", 
+                    dbt_attempts, max_dbt_correction_attempts)
+        
+        if dbt_attempts < max_dbt_correction_attempts:
+            logger.info("Calling dbt_correction_loop to fix dbt errors.")
+            success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
+            if success:
+                logger.info("dbt_correction_loop succeeded.")
+                break
+        else:
+            logger.info("Reached max dbt correction attempts; stopping semantic loop.")
+    
+    return success
 
 def test(
     args: argparse.Namespace,
@@ -187,22 +342,9 @@ def test(
         #                  Query Plan Spider Agent                  #
         ##############################################################
         
-        
-        query_plan_spider_instruction = "Your task is to focus ONLY on creating the transformation query plan: analyze the data model requirements and source schemas to create a comprehensive query plan that will guide subsequent SQL development. Create a detailed .txt file outlining how source tables should be transformed into the final data models defined in data_model.yaml. Do NOT write actual SQL queries - focus on the high-level transformation logic, data flow, and dependencies."
-        logger.info('Task input for query plan spider:' + query_plan_spider_instruction)
-        
-        query_plan_spider_agent = PromptAgent(
-          name="query_plan_spider",
-          instruction=query_plan_spider_instruction,
-          model=args.model,
-          top_p=args.top_p,
-          temperature=args.temperature,
-          max_memory_length=args.max_memory_length,
-          max_steps=15,
-        )
-        
         # Generate Query Plan
         logger.info("Starting query plan spider for %s", instance_id)
+        query_plan_spider_agent = make_agent("query_plan_spider", args.model, args)
         run_spider(query_plan_spider_agent, post_processor, output_dir)
         logger.info("Query plan spider finished for %s", instance_id)
 
@@ -210,21 +352,9 @@ def test(
         #                      SQL Spider Agent                      #
         ##############################################################
         
-        sql_spider_instruction = "Your task is to generate the SQL queries based on the provided query plan. Carefully read the query_plan.txt file created by the previous agent, and translate each step of the plan into executable SQL statements that will transform the source data into the desired data models as specified in data_model.yaml. Ensure that the SQL queries are efficient, accurate, and adhere to best practices for database operations."
-        logger.info('Task input for sql spider:' + sql_spider_instruction)
-        
-        sql_spider_agent = PromptAgent(
-          name="sql_spider",
-          instruction=sql_spider_instruction,
-          model=args.model,
-          top_p=args.top_p,
-          temperature=args.temperature,
-          max_memory_length=args.max_memory_length,
-          max_steps=15,
-        )
-        
         # Generate SQL Queries
         logger.info("Starting SQL spider for %s", instance_id)
+        sql_spider_agent = make_agent("sql_spider", args.model, args)
         run_spider(sql_spider_agent, post_processor, output_dir)
         logger.info("SQL spider finished for %s", instance_id)
         
@@ -235,115 +365,24 @@ def test(
         #                   DBT agent                    #
         ##################################################
 
-        # dbt is the agent that creates dbt_project.yml and profiles.yml
-        dbt_spider_instruction = """Your task is to create the DBT configuration files (dbt_project.yml and profiles.yml)
-          required to run the SQL models generated by the SQL Spider.
-
-          You MUST:
-          - Read config.yaml for Snowflake connection and SCHEMA settings.
-          - Read all SQL models in ./sql/.
-          - Use exactly the schema from config.yaml (uppercase).
-          - Never invent a schema.
-          - Never modify SQL.
-          - Never create extra files.
-          - Produce valid DBT YAML only.
-
-          Follow the system prompt rules strictly.
-        """
-
-        logger.info('Task input for dbt agent:' + dbt_spider_instruction)
-        dbt_spider = PromptAgent(
-          name="dbt_spider",
-          instruction=dbt_spider_instruction,
-          model=args.model,
-          top_p=args.top_p,
-          temperature=args.temperature,
-          max_memory_length=args.max_memory_length,
-          max_steps=15,
-        )
-
         # Generate DBT configuration files
         logger.info("Starting DBT agent for %s", instance_id)
+        dbt_spider = make_agent("dbt_spider", args.model, args)
         run_spider(dbt_spider, post_processor, output_dir)
         logger.info("DBT agent finished for %s", instance_id) 
 
         ##################################################
-        #         ELT Execution + Correction Loop        #
+        #         ELT Execution Correction Loop          #
         ##################################################
-        max_attempts = max(1, int(args.max_retries))  
-        attempt = 1
-        while attempt <= max_attempts:
-            logger.info("Starting ELT execution (attempt %d) for %s", attempt, instance_id)
-            exit_code = os.system("dbt run")
-            # On POSIX, os.system returns the exit status; 0 means success
-            success = (exit_code == 0)
-            if success:
-                logger.info("ELT execution succeeded on attempt %d for %s", attempt, instance_id)
-                break
-            logger.info("ELT execution failed on attempt %d for %s (exit_code=%d)", attempt, instance_id, exit_code)
-
-            if attempt == max_attempts:
-                logger.info("Reached max attempts (%d), stopping", max_attempts)
-                break
-
-            logger.info("Retries remaining: %d. Starting correction loop for %s", max_attempts - attempt, instance_id)
-
-            # correction plan spider function is to create a correction plan based on dbt run logs
-            correction_plan_spider_instruction = "Your task is to analyze the dbt run logs in ./logs/dbt.log and create a detailed correction plan to address any errors or issues encountered during the execution. Review the logs carefully to identify the root causes of failures, and outline specific steps to correct them. The correction plan should include modifications to SQL queries, DBT configurations, or any other relevant components necessary to ensure successful execution in the next attempt."
-
-            logger.info('Task input for correction plan spider:' + correction_plan_spider_instruction)
-            correction_plan_spider_agent = PromptAgent(
-              name="correction_plan_spider",
-              instruction=correction_plan_spider_instruction,
-              model=args.model,
-              top_p=args.top_p,
-              temperature=args.temperature,
-              max_memory_length=args.max_memory_length,
-              max_steps=15,
-            )
-
-            # Generate Correction Plan
-            logger.info("Starting correction plan spider for %s", instance_id)
-            run_spider(correction_plan_spider_agent, post_processor, output_dir)
-            logger.info("Correction plan spider finished for %s", instance_id)
+        success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
 
 
-            # correction spider function is to implement the corrections based on the correction plan
-            correction_spider_instruction = """
-            Your task is to APPLY the corrections described in correction_plan.txt. 
-            Do not analyze the errors yourself and do not invent new fixes. 
-            Read correction_plan.txt completely using ReadFile, then update only the files 
-            explicitly referenced in the plan. Apply each fix exactly as written, using the 
-            specified file paths, line anchors, and replace/insert/delete instructions.
+        ##################################################
+        #          SEMANTIC VERIFICATION LOOP            #
+        ##################################################
+        if success:
+            semantic_verification_loop(args, post_processor, output_dir, args.max_retries, instance_id)
 
-            You MUST:
-            - Modify only the files listed in the correction plan.
-            - Perform only the actions described in the plan.
-            - Use EditFile for all modifications.
-            - Make minimal, surgical edits exactly matching the plan’s content.
-            - Never rewrite entire files unless the plan explicitly requires it.
-            - Never change any SQL or YAML that is not part of the plan.
-            - Never create new files, rename files, or invent schemas or fields.
-
-            Follow the system prompt strictly.
-            """
-
-            correction_spider_agent = PromptAgent(
-              name="correction_spider",
-              instruction=correction_spider_instruction,
-              model=args.model,  
-              top_p=args.top_p,
-              temperature=args.temperature,
-              max_memory_length=args.max_memory_length,
-              max_steps=15,
-            )
-
-            # Generate Corrected SQL Queries
-            logger.info("Starting correction SQL spider for %s", instance_id)
-            run_spider(correction_spider_agent, post_processor, output_dir)
-            logger.info("Correction SQL spider finished for %s", instance_id)
-
-            attempt += 1
         logger.info("Finished %s", instance_id)
 
 

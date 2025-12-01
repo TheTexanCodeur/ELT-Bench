@@ -9,7 +9,7 @@ import uuid
 from http import HTTPStatus
 from io import BytesIO
 from typing import Dict, List
-from spiders.prompts import QUERY_PLAN_SPIDER_SYSTEM, SQL_SPIDER_SYSTEM, DBT_SPIDER_SYSTEM, CORRECTION_PLAN_SPIDER_SYSTEM, CORRECTION_SPIDER_SYSTEM
+from spiders.prompts import QUERY_PLAN_SPIDER_SYSTEM, SQL_SPIDER_SYSTEM, DBT_SPIDER_SYSTEM, CORRECTION_PLAN_SPIDER_SYSTEM, CORRECTION_SPIDER_SYSTEM, VERIFICATION_SPIDER_SYSTEM, SEMANTIC_CORRECTION_PLAN_SPIDER_SYSTEM
 from spiders.action import Action, Bash, Terminate, CreateFile, EditFile, LOCAL_DB_SQL, BIGQUERY_EXEC_SQL, SNOWFLAKE_EXEC_SQL, BQ_GET_TABLES, BQ_GET_TABLE_INFO, BQ_SAMPLE_ROWS, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS
 from spiders.models import call_llm
 from spiders.controller import PythonController
@@ -54,11 +54,12 @@ class PromptAgent:
         
         self.instruction = instruction
         
-        self.system_prompts = {"query_plan_spider": QUERY_PLAN_SPIDER_SYSTEM, "sql_spider": SQL_SPIDER_SYSTEM, "dbt_spider": DBT_SPIDER_SYSTEM, "correction_plan_spider": CORRECTION_PLAN_SPIDER_SYSTEM, "correction_spider": CORRECTION_SPIDER_SYSTEM}
+        self.system_prompts = {"query_plan_spider": QUERY_PLAN_SPIDER_SYSTEM, "sql_spider": SQL_SPIDER_SYSTEM, "dbt_spider": DBT_SPIDER_SYSTEM, "correction_plan_spider": CORRECTION_PLAN_SPIDER_SYSTEM, "correction_spider": CORRECTION_SPIDER_SYSTEM, "verification_spider": VERIFICATION_SPIDER_SYSTEM, "semantic_correction_plan_spider": SEMANTIC_CORRECTION_PLAN_SPIDER_SYSTEM}
      
         self._AVAILABLE_ACTION_CLASSES = [Bash, Terminate, CreateFile, EditFile, SNOWFLAKE_EXEC_SQL, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS]
         
         action_space = "".join([action_cls.get_action_description() for action_cls in self._AVAILABLE_ACTION_CLASSES])
+
         self.system_message = self.system_prompts[self.name].format(work_dir=self.work_dir, action_space=action_space, task=self.instruction, max_steps=self.max_steps)
 
         if self.model.startswith("gpt-oss-120b"):
