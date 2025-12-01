@@ -329,6 +329,18 @@ def test(
         
         # Copy all the input files to output dir
         os.system(f"cp -r {os.path.join(args.test_path, db)}/* {output_dir}/")
+
+        # Ensure /workspace points to our current run directory
+        workspace_path = os.path.abspath("workspace")
+
+        # Remove old
+        if os.path.islink(workspace_path) or os.path.exists(workspace_path):
+            os.system(f"rm -rf {workspace_path}")
+
+        # Create new symlink
+        os.symlink(output_dir, workspace_path)
+        logger.info(f"Mounted workspace: {workspace_path} -> {output_dir}")
+
         
         # Change working directory to output dir
         os.chdir(output_dir)
