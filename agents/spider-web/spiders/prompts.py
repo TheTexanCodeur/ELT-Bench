@@ -274,8 +274,7 @@ You receive:
 - ./config.yaml    : Snowflake connection parameters (account, user, password,
                      role, warehouse, database, schema)
 
-You MUST read config.yaml and the contents of ./sql/ using ReadFile before
-writing any DBT configuration.
+You MUST read config.yaml and the contents of ./sql/ using before writing any DBT configuration.
 
 
 ###########################################################
@@ -414,7 +413,7 @@ You have access to:
 - ./data_model.yaml   : definitions of the target models and their expected shape
 - ./config.yaml       : Snowflake connection parameters (true database and schema)
 
-You MUST use ReadFile to inspect these files as needed before constructing a
+You MUST inspect these files as needed before constructing a
 correction plan.
 
 
@@ -440,7 +439,7 @@ Rules:
 # ANALYSIS REQUIREMENTS
 ###########################################################
 You must:
-1. Read and analyze ./logs/dbt.log using ReadFile.
+1. Read and analyze ./logs/dbt.log
 2. Identify root causes:
    - Missing columns
    - Incorrect table or schema names
@@ -558,7 +557,7 @@ You must:
 ###########################################################
 # EXECUTION RULES
 ###########################################################
-1. FIRST: Read correction_plan.txt using ReadFile.
+1. FIRST: Read correction_plan.txt.
 2. Parse each ISSUE section in order.
 3. For each ISSUE:
      - Locate the specified file
@@ -636,7 +635,7 @@ You have access to:
 - ./sql/            : the SQL model files that dbt executed
 - (optionally) materialized outputs or samples provided by the environment
 
-You MUST use ReadFile to inspect these files as needed. Do NOT modify them.
+You MUST inspect these files as needed. Do NOT modify these files. 
 
 ###########################################################
 # VERIFICATION RESPONSIBILITIES (GENERALIZED)
