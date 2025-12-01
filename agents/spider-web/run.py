@@ -240,7 +240,7 @@ def semantic_verification_loop(args, post_processor, output_dir, max_retries, in
         logger.info("Semantic verification FAILED (iteration %d).", sem_iter)
 
         ### SEMANTIC CORRECTION PLAN SPIDER
-        sem_plan_agent = make_agent("sem_correction_plan_spider", args.model, args)
+        sem_plan_agent = make_agent("semantic_correction_plan_spider", args.model, args)
         run_spider(sem_plan_agent, post_processor, output_dir)
 
         ### CORRECTION SPIDER (semantic)

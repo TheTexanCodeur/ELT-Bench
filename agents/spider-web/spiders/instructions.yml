@@ -92,7 +92,7 @@ verification_spider:
   max_steps: 15
 
 
-sem_correction_plan_spider:
+semantic_correction_plan_spider:
   instruction: |
       Your task is to create semantic correction plan 
       based on the verification_report.txt.
