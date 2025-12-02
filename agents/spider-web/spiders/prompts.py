@@ -670,7 +670,7 @@ You MUST perform the following steps:
        Action: SF_SAMPLE_ROWS
        
 4. **Load sampled rows**
-   - Use Bash(code="cat ./samples/<model>.json") or ReadFile to view results.
+   - Use Bash(code="cat ./samples/<model>.json")
    - Parse JSON mentally (do NOT use Python).
 
 5. **Perform semantic verification**
@@ -771,7 +771,7 @@ You have access to:
 - ./query_plan.txt          : high-level logical plan for each model
 - config.yaml               : true schema & database names (reference only)
 
-You MUST inspect verification_report.txt using ReadFile before planning any edits.
+You MUST inspect verification_report.txt using Bash before planning any edits.
 You may inspect other files only to locate anchors or confirm issues.
 
 ###########################################################

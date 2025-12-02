@@ -221,13 +221,24 @@ def semantic_verification_loop(args, post_processor, output_dir, max_retries, in
     for sem_iter in range(1, max_retries + 1):
 
         ### VERIFICATION SPIDER
+        logger.info("Starting verification spider (iteration %d) for %s", sem_iter, instance_id)
         verification_spider_agent = make_agent("verification_spider", args.model, args)
         run_spider(verification_spider_agent, post_processor, output_dir)
+        logger.info("Verification spider finished (iteration %d) for %s", sem_iter, instance_id)
 
         # read verification report
         report_path = "verification_report.txt"
         if not os.path.exists(report_path):
-            logger.warning("verification_report.txt missing; assuming PASS.")
+            logger.warning("verification_report.txt missing after verification spider; checking if agent completed successfully")
+            # Check if the verification agent actually completed
+            trajectory_path = f"trajectories/verification_spider/result.json"
+            if os.path.exists(trajectory_path):
+                with open(trajectory_path) as f:
+                    result = json.load(f)
+                    if not result.get("finished", False):
+                        logger.error("Verification spider did not complete successfully (max_steps reached or error)")
+                        return False
+            logger.warning("Assuming PASS since no report was generated and agent finished")
             return True
 
         with open(report_path) as f:
@@ -240,12 +251,16 @@ def semantic_verification_loop(args, post_processor, output_dir, max_retries, in
         logger.info("Semantic verification FAILED (iteration %d).", sem_iter)
 
         ### SEMANTIC CORRECTION PLAN SPIDER
+        logger.info("Starting semantic correction plan spider for %s", instance_id)
         sem_plan_agent = make_agent("semantic_correction_plan_spider", args.model, args)
         run_spider(sem_plan_agent, post_processor, output_dir)
+        logger.info("Semantic correction plan spider finished for %s", instance_id)
 
         ### CORRECTION SPIDER (semantic)
+        logger.info("Starting correction spider (semantic) for %s", instance_id)
         correction_spider_agent = make_agent("correction_spider", args.model, args)
         run_spider(correction_spider_agent, post_processor, output_dir)
+        logger.info("Correction spider (semantic) finished for %s", instance_id)
 
     logger.info("Semantic verification phase completed for %s", instance_id)
     

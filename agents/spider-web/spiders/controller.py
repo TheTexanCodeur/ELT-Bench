@@ -262,8 +262,9 @@ class PythonController:
             return f"File {file_path} already exists."
         
         dir_path = os.path.dirname(file_path)
-        mkdir_command = f"mkdir -p {dir_path}"
-        self.execute_command(mkdir_command)
+        if dir_path:
+            mkdir_command = f"mkdir -p {dir_path}"
+            self.execute_command(mkdir_command)
 
         create_command = f'echo "{escaped_content}" > {file_path}'
 

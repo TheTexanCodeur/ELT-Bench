@@ -1,9 +1,24 @@
+import os
+
+# ------------------------------------------------------------
+# Helper used inside all templates
+# ------------------------------------------------------------
+
+# Ensures absolute paths like "/workspace/foo.csv" → "./foo.csv"
+NORMALIZE = "os.path.join('.', {path}.lstrip('/'))"
+
+
+# ============================================================
+# BIGQUERY TEMPLATES
+# ============================================================
+
 BQ_GET_TABLES_TEMPLATE = """
 import os
 import pandas as pd
 from google.cloud import bigquery
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/workspace/bigquery_credential.json"
+# Load local credentials
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./bigquery_credential.json"
 client = bigquery.Client()
 
 query = f\"\"\"
@@ -17,23 +32,27 @@ WHERE
 
 query_job = client.query(query)
 
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
+
 try:
-    results = query_job.result().to_dataframe() 
+    results = query_job.result().to_dataframe()
     if results.empty:
         print("No data found for the specified query.")
     else:
-        results.to_csv("{save_path}", index=False)
+        results.to_csv(save_path, index=False)
         print(f"DB metadata is saved to {save_path}")
 except Exception as e:
     print("Error occurred while fetching data: ", e)
 """
+
 
 BQ_GET_TABLE_INFO_TEMPLATE = """
 import os
 import pandas as pd
 from google.cloud import bigquery
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/workspace/bigquery_credential.json"
+# Load local credentials
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./bigquery_credential.json"
 client = bigquery.Client()
 
 query = f\"\"\"
@@ -44,76 +63,89 @@ query = f\"\"\"
 
 query_job = client.query(query)
 
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
+
 try:
-    output = query_job.result().to_dataframe() 
-    if output.empty:
+    df = query_job.result().to_dataframe()
+    if df.empty:
         print("No data found for the specified query.")
     else:
-        output.to_csv("{save_path}", index=False)
+        df.to_csv(save_path, index=False)
         print(f"Results saved to {save_path}")
 except Exception as e:
     print("Error occurred while fetching data: ", e)
 """
+
 
 BQ_SAMPLE_ROWS_TEMPLATE = """
 import os
 import pandas as pd
 from google.cloud import bigquery
 import json
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/workspace/bigquery_credential.json"
+
+# Load local credentials
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./bigquery_credential.json"
 client = bigquery.Client()
 
 query = f\"\"\"
-    SELECT
-    *
-    FROM
-    `{database_name}.{dataset_name}.{table}`
-    TABLESAMPLE SYSTEM (0.0001 PERCENT)
-    LIMIT {row_number};
+SELECT *
+FROM `{database_name}.{dataset_name}.{table}`
+TABLESAMPLE SYSTEM (0.0001 PERCENT)
+LIMIT {row_number};
 \"\"\"
 
 query_job = client.query(query)
 
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
+
 try:
-    output = query_job.result().to_dataframe() 
-    if output.empty:
+    df = query_job.result().to_dataframe()
+    if df.empty:
         print("No data found for the specified query.")
     else:
-        sample_rows = output.to_dict(orient='records')
+        sample_rows = df.to_dict(orient='records')
         json_data = json.dumps(sample_rows, indent=4, default=str)
-        with open("{save_path}", 'w') as json_file: 
-            json_file.write(json_data)
+        with open(save_path, 'w') as fh:
+            fh.write(json_data)
         print(f"Sample rows saved to {save_path}")
 except Exception as e:
     print("Error occurred while fetching data: ", e)
 """
+
 
 BQ_EXEC_SQL_QUERY_TEMPLATE = """
 import os
 import pandas as pd
 from google.cloud import bigquery
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/workspace/bigquery_credential.json"
+# Load local credentials
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./bigquery_credential.json"
 client = bigquery.Client()
 
 sql_query = f\"\"\"{sql_query}\"\"\"
 
 query_job = client.query(sql_query)
 
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
+
 try:
-    results = query_job.result().to_dataframe()
-    if results.empty:
-        print("No data found for the specified query.")
+    df = query_job.result().to_dataframe()
+    if df.empty:
+        print("No data found for the provided query.")
     else:
         if {is_save}:
-            results.to_csv("{save_path}", index=False)
+            df.to_csv(save_path, index=False)
             print(f"Results saved to {save_path}")
         else:
-            print(results)
+            print(df)
 except Exception as e:
-    print("Error occurred while fetching data: ", e)
+    print("Error occurred while executing SQL: ", e)
 """
 
+
+# ============================================================
+# SNOWFLAKE TEMPLATES
+# ============================================================
 
 SF_EXEC_SQL_QUERY_TEMPLATE = """
 import os
@@ -121,48 +153,43 @@ import json
 import pandas as pd
 import snowflake.connector
 
-# Load Snowflake credentials
-snowflake_credential = json.load(open("/workspace/snowflake_credential.json"))
+# Load Snowflake credentials (local)
+snowflake_credential = json.load(open("./snowflake_credential.json"))
 
-# Connect to Snowflake
-conn = snowflake.connector.connect(
-    **snowflake_credential
-)
+# Connect
+conn = snowflake.connector.connect(**snowflake_credential)
 cursor = conn.cursor()
 
-# Define the SQL query
 sql_query = f\"\"\"
 
 {sql_query}
 
-
 \"\"\"
 
-# Execute the SQL query
+# Execute
 cursor.execute(sql_query)
 
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
+
 try:
-    # Fetch the results
     results = cursor.fetchall()
     columns = [desc[0] for desc in cursor.description]
     df = pd.DataFrame(results, columns=columns)
-
-    # Check if the result is empty
     if df.empty:
         print("No data found for the specified query.")
     else:
-        # Save or print the results based on the is_save flag
         if {is_save}:
-            df.to_csv("{save_path}", index=False)
+            df.to_csv(save_path, index=False)
             print(f"Results saved to {save_path}")
         else:
             print(df)
 except Exception as e:
-    print("Error occurred while fetching data: ", e)
+    print("Error: ", e)
 finally:
     cursor.close()
     conn.close()
 """
+
 
 SF_GET_TABLE_INFO_TEMPLATE = """
 import os
@@ -170,15 +197,11 @@ import json
 import pandas as pd
 import snowflake.connector
 
-# Load Snowflake credentials
-snowflake_credential = json.load(open("/workspace/snowflake_credential.json"))
+# Load credentials locally
+snowflake_credential = json.load(open("./snowflake_credential.json"))
 
-# Connect to Snowflake
-conn = snowflake.connector.connect(
-    **snowflake_credential
-)
+conn = snowflake.connector.connect(**snowflake_credential)
 cursor = conn.cursor()
-
 
 query = f\"\"\"
 SELECT
@@ -186,26 +209,29 @@ SELECT
     data_type,
     comment
 FROM
-    \"{database_name}\".INFORMATION_SCHEMA.COLUMNS
+    "{database_name}".INFORMATION_SCHEMA.COLUMNS
 WHERE
-    table_schema = '{schema_name}' AND
-    table_name = '{table}'
+    table_schema = '{schema_name}'
+    AND table_name = '{table}'
 \"\"\"
+
 cursor.execute(query)
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
 
 try:
-    df = pd.DataFrame(cursor.fetchall(), columns=['column_names', 'column_types', 'description'])
+    df = pd.DataFrame(cursor.fetchall(), columns=['column_name', 'data_type', 'description'])
     if df.empty:
-        print("No data found for the specified query.")
+        print("No data found.")
     else:
-        df.to_csv("{save_path}", index=False)
+        df.to_csv(save_path, index=False)
         print(f"Results saved to {save_path}")
 except Exception as e:
-    print("Error occurred while fetching data: ", e)
+    print("Error:", e)
 finally:
     cursor.close()
     conn.close()
 """
+
 
 SF_GET_TABLES_TEMPLATE = """
 import os
@@ -213,30 +239,31 @@ import json
 import pandas as pd
 import snowflake.connector
 
-# Load Snowflake credentials
-snowflake_credential = json.load(open("/workspace/snowflake_credential.json"))
+# Local credentials
+snowflake_credential = json.load(open("./snowflake_credential.json"))
 
-# Connect to Snowflake
-conn = snowflake.connector.connect(
-    **snowflake_credential
-)
+conn = snowflake.connector.connect(**snowflake_credential)
 cursor = conn.cursor()
 
 query = f\"\"\"
 SELECT table_name, comment
-FROM \"{database_name}\".INFORMATION_SCHEMA.TABLES
+FROM "{database_name}".INFORMATION_SCHEMA.TABLES
 WHERE table_schema = '{schema_name}'
 \"\"\"
 
 cursor.execute(query)
+tables = cursor.fetchall()
 
-tables_information = cursor.fetchall()
-dataset_metadata = pd.DataFrame(tables_information, columns=['table_name', 'description'])
-df = pd.DataFrame(dataset_metadata)
-df.to_csv(\"{save_path}\", index=False)
+df = pd.DataFrame(tables, columns=['table_name', 'description'])
+
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
+df.to_csv(save_path, index=False)
 print(f"Results saved to {save_path}")
 
+cursor.close()
+conn.close()
 """
+
 
 SF_SAMPLE_ROWS_TEMPLATE = """
 import os
@@ -244,37 +271,44 @@ import json
 import pandas as pd
 import snowflake.connector
 
-# Load Snowflake credentials
-snowflake_credential = json.load(open("/workspace/snowflake_credential.json"))
+# Local credentials
+snowflake_credential = json.load(open("./snowflake_credential.json"))
 
-# Connect to Snowflake
-conn = snowflake.connector.connect(
-    **snowflake_credential
-)
+conn = snowflake.connector.connect(**snowflake_credential)
 cursor = conn.cursor()
 
-
 query = f\"\"\"
-        SELECT
-        *
-        FROM
-            \"{database_name}\".\"{schema_name}\".\"{table}\"
-        TABLESAMPLE BERNOULLI (1)
-        LIMIT {row_number};
-        ;
-\"\"\"  
-query_job = client.query(query)
-output = query_job.result().to_dataframe()
-sample_rows = output.to_dict(orient='records')
+SELECT *
+FROM "{database_name}"."{schema_name}"."{table}"
+TABLESAMPLE BERNOULLI (1)
+LIMIT {row_number};
+\"\"\"
+
+cursor.execute(query)
+rows = cursor.fetchall()
+cols = [desc[0] for desc in cursor.description]
+
+df = pd.DataFrame(rows, columns=cols)
+
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
+
+import json
+sample_rows = df.to_dict(orient='records')
 json_data = json.dumps(sample_rows, indent=4, default=str)
-with open({save_path}, 'w') as json_file: 
-    json_file.write(json_data)
+
+with open(save_path, 'w') as fh:
+    fh.write(json_data)
+
 print(f"Sample rows saved to {save_path}")
 
+cursor.close()
+conn.close()
 """
 
 
-
+# ============================================================
+# LOCAL SQL TEMPLATE
+# ============================================================
 
 LOCAL_SQL_TEMPLATE = """
 import pandas as pd
@@ -283,7 +317,7 @@ import sqlite3
 import duckdb
 
 def detect_db_type(file_path):
-    if file_path.endswith('.db') or file_path.endswith('.sqlite') :
+    if file_path.endswith('.db') or file_path.endswith('.sqlite'):
         return 'sqlite'
     elif file_path.endswith('.duckdb'):
         return 'duckdb'
@@ -296,43 +330,33 @@ def detect_db_type(file_path):
         except:
             return 'sqlite'
 
-def execute_sql(file_path, command, output_path_path):
+def execute_sql(file_path, command, output_path):
+    # Normalize paths
+    file_path = os.path.join(".", file_path.lstrip("/"))
+    output_path = os.path.join(".", output_path.lstrip("/"))
+
     db_type = detect_db_type(file_path)
-    
-    # Make sure the file path is correct
-    if not os.path.exists(file_path) and db_type == 'sqlite':
-        print(f"ERROR: Database file not found: {{file_path}}")
+    if db_type == 'sqlite' and not os.path.exists(file_path):
+        print(f"ERROR: Database file not found: {file_path}")
         return
 
-    # Connect to the database
-    if db_type == 'sqlite':
-        conn = sqlite3.connect(file_path)
-    elif db_type == 'duckdb':
-        conn = duckdb.connect(database=file_path, read_only=True)
-    else:
-        print(f"ERROR: Unsupported database type {{db_type}}")
-        return
-    
+    conn = sqlite3.connect(file_path) if db_type == 'sqlite' else duckdb.connect(database=file_path, read_only=True)
+
     try:
-        # Execute the SQL command and fetch the results
         df = pd.read_sql_query(command, conn)
-        
-        # Check if the output should be saved to a CSV file or printed directly
-        if output_path_path.lower().endswith(".csv"):
-            df.to_csv(output_path_path, index=False)
-            print(f"Output saved to: {{output_path_path}}")
+        if output_path.lower().endswith(".csv"):
+            df.to_csv(output_path, index=False)
+            print(f"Output saved to: {output_path}")
         else:
             print(df)
     except Exception as e:
-        print(f"ERROR: {{e}}")
+        print(f"ERROR: {e}")
     finally:
-        # Close the connection to the database
         conn.close()
 
-# Example usage
-file_path = "{file_path}"    # Path to your database file
-command = f\"\"\"{sql_command}\"\"\"    # SQL command to be executed
-output_path = "{output_path}"# Path to save the output as a CSV or "directly"
+file_path = "{file_path}"
+command = f\"\"\"{sql_command}\"\"\"
+output_path = "{output_path}"
 
 execute_sql(file_path, command, output_path)
 """
