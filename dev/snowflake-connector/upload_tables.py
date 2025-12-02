@@ -8,8 +8,10 @@ import json
 from pathlib import Path
 import unicodedata
 
-# Get current working directory (you said you're at "ELT-BENCH" level)
-base_path = Path.cwd()
+# Get the script's directory and calculate the repo root (two levels up)
+script_dir = Path(__file__).parent.resolve()
+repo_root = script_dir.parent.parent
+base_path = repo_root
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--example_index", "-i", type=str, default="all", help="index range of the examples to run, e.g., '0-10', '2,3', 'all'")
@@ -30,7 +32,7 @@ def read_json(file_path):
 
 
 def load_flat_files(db_name):
-    folder_path = f"./elt-bench/{db_name}"
+    folder_path = f"../../elt-bench/{db_name}"
     config_path = os.path.join(folder_path, "config.yaml")
     
     # Read config file
@@ -123,20 +125,20 @@ def load_flat_files(db_name):
     
     shutil.rmtree(data_dir)
 
-file_path = './setup/destination/snowflake_credential.json' 
+file_path = '../../setup/destination/snowflake_credential.json' 
 snowflake_config = read_json(file_path)   
 
 conn = snowflake.connector.connect(**snowflake_config) 
     
 file_type_dict = {"csv": "CSV_TYPE", "jsonl": "JSON_TYPE", "parquet": "PARQUET_TYPE"}
 
-names = sorted(os.listdir("./elt-bench"))
+names = sorted(os.listdir("../../elt-bench"))
 
 start, end = select_tables(args.example_index)
 
 for folder_name in names[start:end]:
         
-    folder_path = f"./data/source/db/data/{folder_name}"
+    folder_path = f"../../data/source/db/data/{folder_name}"
     
     conn.cursor().execute(f"DROP DATABASE IF EXISTS {folder_name}")
 
@@ -214,7 +216,7 @@ for folder_name in names[start:end]:
             
             print(f"Finished loading file {file_name}", flush=True)
         
-    folder_path = f"./data/source/api/data/{folder_name}"
+    folder_path = f"../../data/source/api/data/{folder_name}"
     
     if os.path.isdir(folder_path):
         
