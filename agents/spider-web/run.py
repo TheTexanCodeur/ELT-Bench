@@ -201,43 +201,52 @@ def dbt_correction_loop(args, post_processor, output_dir, max_retries, instance_
     return success
 
 
-def semantic_verification_loop(args, post_processor, output_dir, max_retries, instance_id, max_dbt_correction_attempts=2):
+def semantic_verification_loop(
+    args,
+    post_processor,
+    output_dir,
+    max_retries,
+    instance_id,
+) -> bool:
     """
     Run semantic verification and correction loop on successful dbt execution.
-    
-    Args:
-        args: Command line arguments containing model configuration
-        post_processor: PostProcessor instance for handling file operations
-        output_dir: Directory where dbt project is located
-        max_retries: Maximum number of verification/correction iterations
-        instance_id: Unique identifier for this instance (for logging)
-        max_dbt_correction_attempts: Maximum times to call dbt_correction_loop if dbt fails (default: 2)
-    
+
     Returns:
-        bool: True if verification passed, False otherwise
+        bool: True if verification passed at any iteration, False otherwise.
     """
     logger.info("Starting semantic verification phase for %s", instance_id)
 
-    for sem_iter in range(1, max_retries + 1):
+    report_path = "verification_report.txt"
 
-        ### VERIFICATION SPIDER
+    for sem_iter in range(1, max_retries + 1):
+        # -----------------------------
+        # 1. Run verification spider
+        # -----------------------------
         logger.info("Starting verification spider (iteration %d) for %s", sem_iter, instance_id)
         verification_spider_agent = make_agent("verification_spider", args.model, args)
         run_spider(verification_spider_agent, post_processor, output_dir)
         logger.info("Verification spider finished (iteration %d) for %s", sem_iter, instance_id)
 
-        # read verification report
-        report_path = "verification_report.txt"
+        # -----------------------------
+        # 2. Read / interpret report
+        # -----------------------------
         if not os.path.exists(report_path):
-            logger.warning("verification_report.txt missing after verification spider; checking if agent completed successfully")
-            # Check if the verification agent actually completed
-            trajectory_path = f"trajectories/verification_spider/result.json"
+            logger.warning(
+                "verification_report.txt missing after verification spider; "
+                "checking if agent completed successfully"
+            )
+            trajectory_path = "trajectories/verification_spider/result.json"
             if os.path.exists(trajectory_path):
                 with open(trajectory_path) as f:
                     result = json.load(f)
-                    if not result.get("finished", False):
-                        logger.error("Verification spider did not complete successfully (max_steps reached or error)")
-                        return False
+                if not result.get("finished", False):
+                    logger.error(
+                        "Verification spider did not complete successfully "
+                        "(max_steps reached or error)"
+                    )
+                    return False
+
+            # Agent finished but produced no report: by design you treat this as PASS
             logger.warning("Assuming PASS since no report was generated and agent finished")
             return True
 
@@ -248,49 +257,54 @@ def semantic_verification_loop(args, post_processor, output_dir, max_retries, in
             logger.info("Semantic verification PASSED for %s", instance_id)
             return True
 
-        logger.info("Semantic verification FAILED (iteration %d).", sem_iter)
+        logger.info(
+            "Semantic verification FAILED (iteration %d) for %s.",
+            sem_iter,
+            instance_id,
+        )
 
-        ### SEMANTIC CORRECTION PLAN SPIDER
+        # -----------------------------
+        # 3. Semantic correction phase
+        # -----------------------------
         logger.info("Starting semantic correction plan spider for %s", instance_id)
         sem_plan_agent = make_agent("semantic_correction_plan_spider", args.model, args)
         run_spider(sem_plan_agent, post_processor, output_dir)
         logger.info("Semantic correction plan spider finished for %s", instance_id)
 
-        ### CORRECTION SPIDER (semantic)
         logger.info("Starting correction spider (semantic) for %s", instance_id)
         correction_spider_agent = make_agent("correction_spider", args.model, args)
         run_spider(correction_spider_agent, post_processor, output_dir)
         logger.info("Correction spider (semantic) finished for %s", instance_id)
 
-    logger.info("Semantic verification phase completed for %s", instance_id)
-    
-    ### Re-run dbt after all semantic corrections
-    logger.info("Re-running dbt after semantic corrections.")
-    dbt_attempts = 0
-    success = False
-    
-    while dbt_attempts < max_dbt_correction_attempts:
-        exit_code = os.system("dbt run")
-        success = (exit_code == 0)
-        
-        if success:
-            logger.info("dbt run succeeded after semantic corrections.")
-            break
-            
-        dbt_attempts += 1
-        logger.info("dbt failed after semantic corrections (attempt %d/%d).", 
-                    dbt_attempts, max_dbt_correction_attempts)
-        
-        if dbt_attempts < max_dbt_correction_attempts:
-            logger.info("Calling dbt_correction_loop to fix dbt errors.")
-            success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
-            if success:
-                logger.info("dbt_correction_loop succeeded.")
-                break
-        else:
-            logger.info("Reached max dbt correction attempts; stopping semantic loop.")
-    
-    return success
+        # -----------------------------
+        # 4. Re-run dbt with correction
+        # -----------------------------
+        logger.info("Re-running dbt after semantic corrections (iteration %d).", sem_iter)
+        success = dbt_correction_loop(
+            args=args,
+            post_processor=post_processor,
+            output_dir=output_dir,
+            max_retries=args.max_retries,
+            instance_id=instance_id,
+        )
+
+        if not success:
+            logger.error(
+                "dbt_correction_loop failed after semantic corrections at iteration %d for %s",
+                sem_iter,
+                instance_id,
+            )
+            return False
+
+        # If dbt succeeded, loop back to re-verify with new semantics.
+
+    logger.info(
+        "Reached maximum semantic verification iterations (%d) without PASS for %s",
+        max_retries,
+        instance_id,
+    )
+    return False
+
 
 def test(
     args: argparse.Namespace,
