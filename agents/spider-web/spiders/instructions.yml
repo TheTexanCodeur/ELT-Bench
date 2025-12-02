@@ -48,7 +48,7 @@ correction_spider:
   instruction: |
     Your task is to APPLY the corrections described in correction_plan.txt. 
     Do not analyze the errors yourself and do not invent new fixes. 
-    Read correction_plan.txt completely using ReadFile, then update only the files 
+    Read correction_plan.txt completely using Bash, then update only the files 
     explicitly referenced in the plan. Apply each fix exactly as written, using the 
     specified file paths, line anchors, and replace/insert/delete instructions.
 
@@ -72,8 +72,8 @@ verification_spider:
     You MUST:
     - Read config.yaml to identify the correct database and schema.
     - Discover model names by listing the ./sql/ directory.
-    - For EACH model, sample rows directly from Snowflake
-    - Read these sample files using ReadFile or Bash to analyze the values.
+    - For EACH model, sample rows directly from Snowflake using SF_SAMPLE_ROWS
+    - Read these sample files using Bash to analyze the values.
 
     You MUST check for:
     - Schema consistency with data_model.yaml
@@ -83,13 +83,13 @@ verification_spider:
     - Cross-model alignment when applicable
 
     You MUST produce exactly one file: verification_report.txt
-    using CreateFile or EditFile.
+    If the file already exists, use EditFile to update it. Do NOT use Bash to delete it.
 
     The report MUST NOT propose fixes.
     It MUST only describe observed issues with evidence from samples.
 
     Follow the system prompt rules strictly.
-  max_steps: 15
+  max_steps: 25
 
 
 semantic_correction_plan_spider:
