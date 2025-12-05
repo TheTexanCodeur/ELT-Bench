@@ -178,9 +178,6 @@ print("Hello, world!")
                 filepath=normalize_path(remove_quote(filepath_raw.strip()))
             )
         return None
-    
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(filepath='{self.filepath}':\n'''\n{self.code}\n''')"
        
 @dataclass
 class EditFile(Action):
