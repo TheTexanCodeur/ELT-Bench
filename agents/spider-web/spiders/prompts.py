@@ -315,7 +315,7 @@ It MUST contain:
 4. model-paths: ["sql"]
 5. models:
        <project_name>:
-           +materialized: view
+           +materialized: table
            # Each model name (derived from SQL filenames) may appear implicitly
 
 Strict rules:
