@@ -1,13 +1,5 @@
-import base64
-import json
 import logging
-import os
 import re
-import time
-import subprocess
-import uuid
-from http import HTTPStatus
-from io import BytesIO
 from typing import Dict, List
 from spiders.prompts import QUERY_PLAN_SPIDER_SYSTEM, SQL_SPIDER_SYSTEM, DBT_SPIDER_SYSTEM, CORRECTION_PLAN_SPIDER_SYSTEM, CORRECTION_SPIDER_SYSTEM, VERIFICATION_SPIDER_SYSTEM, SEMANTIC_CORRECTION_PLAN_SPIDER_SYSTEM
 from spiders.action import Action, Bash, Terminate, CreateFile, EditFile, LOCAL_DB_SQL, BIGQUERY_EXEC_SQL, SNOWFLAKE_EXEC_SQL, BQ_GET_TABLES, BQ_GET_TABLE_INFO, BQ_SAMPLE_ROWS, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS
@@ -25,7 +17,7 @@ class PromptAgent:
         self,
         name: str,
         instruction: str,
-        model="gpt-4",
+        model="gpt-5",
         work_dir: str = "./",
         max_tokens=1500,
         top_p=0.9,
@@ -146,10 +138,6 @@ class PromptAgent:
         self.responses.append(response)
         self.actions.append(action)
 
-        # if action is not None:
-        #     self.codes.append(action.code)
-        # else:
-        #     self.codes.append(None)
 
         return response, action, step_cost
         
@@ -235,14 +223,16 @@ class PromptAgent:
                 obs = "Failed to parse action from your response, make sure you provide a valid action."
             else:
                 logger.info("Step %d: %s; total cost: %.2f", step_idx + 1, action, total_cost)
-                obs, done = self.controller.step(action)
-
                 if last_action is not None and last_action == action:
                     if repeat_action:
                         return False, "ERROR: Repeated action"
-                    else:
-                        obs = "The action is the same as the last one, you MUST provide a DIFFERENT SQL code or Python Code or different action. you MUST provide a DIFFERENT SQL code or Python Code or different action. you MUST provide a DIFFERENT SQL code or Python Code or different action."
-                        repeat_action = True
+                    obs = (
+                        "The action is the same as the last one, you MUST provide a DIFFERENT SQL "
+                        "code or Python Code or different action. you MUST provide a DIFFERENT SQL "
+                        "code or Python Code or different action. you MUST provide a DIFFERENT SQL "
+                        "code or Python Code or different action."
+                    )
+                    repeat_action = True
                 else:
                     obs, done = self.controller.step(action)
                     last_action = action
