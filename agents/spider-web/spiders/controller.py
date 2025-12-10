@@ -133,9 +133,21 @@ class PythonController:
         mkdir_command = f"mkdir -p {dir_path}"
         self.execute_command(mkdir_command)
 
-        create_command = f'echo "{escaped_content}" > {file_path} && python3 {file_path}'
-        return self.execute_command(create_command)
-    
+        # Write the script
+        write_cmd = f'echo "{escaped_content}" > {file_path}'
+        self.execute_command(write_cmd)
+
+        # Now run the script with the correct working directory
+        result = subprocess.run(
+            ["python3", file_path],
+            cwd=self.work_dir,
+            capture_output=True,
+            text=True
+        )
+
+        return result.stdout if result.returncode == 0 else result.stderr
+
+            
     
     def execute_sql_code(self,file_path, code, output: str) -> str:
         if code.startswith('""') and code.endswith('""'):
