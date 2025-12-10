@@ -280,7 +280,6 @@ cursor = conn.cursor()
 query = f\"\"\"
 SELECT *
 FROM "{database_name}"."{schema_name}"."{table}"
-TABLESAMPLE BERNOULLI (1)
 LIMIT {row_number};
 \"\"\"
 
@@ -292,7 +291,6 @@ df = pd.DataFrame(rows, columns=cols)
 
 save_path = os.path.join(".", "{save_path}".lstrip("/"))
 
-import json
 sample_rows = df.to_dict(orient='records')
 json_data = json.dumps(sample_rows, indent=4, default=str)
 
@@ -304,6 +302,7 @@ print(f"Sample rows saved to {save_path}")
 cursor.close()
 conn.close()
 """
+
 
 
 # ============================================================
