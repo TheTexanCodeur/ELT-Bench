@@ -190,6 +190,20 @@ class EditFile(Action):
     def __repr__(self) -> str:
         return f"EditFile(filepath=\"{self.filepath}\"):\n```\n{self.code.strip()}\n```"
 
+    @classmethod
+    def get_action_description(cls) -> str:
+        return """
+## EditFile
+Signature: EditFile(filepath="path/to/file"):
+```
+file_content
+```
+Description: This action will overwrite the file specified in the filepath field with the content wrapped in paired ``` symbols. Normally, you need to read the file before deciding to use EditFile to modify it.
+Example: EditFile(filepath="hello_world.py"):
+```
+print("Hello, world!")
+```
+"""
 
     def __post_init__(self):
         self.filepath = normalize_path(self.filepath)
