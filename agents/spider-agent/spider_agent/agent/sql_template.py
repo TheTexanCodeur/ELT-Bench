@@ -244,34 +244,38 @@ import json
 import pandas as pd
 import snowflake.connector
 
-# Load Snowflake credentials
-snowflake_credential = json.load(open("/workspace/snowflake_credential.json"))
+# Local credentials
+snowflake_credential = json.load(open("./snowflake_credential.json"))
 
-# Connect to Snowflake
-conn = snowflake.connector.connect(
-    **snowflake_credential
-)
+conn = snowflake.connector.connect(**snowflake_credential)
 cursor = conn.cursor()
 
-
 query = f\"\"\"
-        SELECT
-        *
-        FROM
-            \"{database_name}\".\"{schema_name}\".\"{table}\"
-        TABLESAMPLE BERNOULLI (1)
-        LIMIT {row_number};
-        ;
-\"\"\"  
-query_job = client.query(query)
-output = query_job.result().to_dataframe()
-sample_rows = output.to_dict(orient='records')
+SELECT *
+FROM "{database_name}"."{schema_name}"."{table}"
+LIMIT {row_number};
+\"\"\"
+
+cursor.execute(query)
+rows = cursor.fetchall()
+cols = [desc[0] for desc in cursor.description]
+
+df = pd.DataFrame(rows, columns=cols)
+
+save_path = os.path.join(".", "{save_path}".lstrip("/"))
+
+sample_rows = df.to_dict(orient='records')
 json_data = json.dumps(sample_rows, indent=4, default=str)
-with open({save_path}, 'w') as json_file: 
-    json_file.write(json_data)
+
+with open(save_path, 'w') as fh:
+    fh.write(json_data)
+
 print(f"Sample rows saved to {save_path}")
 
+cursor.close()
+conn.close()
 """
+
 
 
 
