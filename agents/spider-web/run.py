@@ -330,12 +330,16 @@ def test(
     # Save original working directory to return to it after each iteration
     original_cwd = os.getcwd()
     
+    # Convert relative paths to absolute paths before changing directories
+    abs_test_path = os.path.abspath(args.test_path)
+    abs_output_dir_base = os.path.abspath(args.output_dir)
+    
     for db in databases:
         
         ### INITIALIZATION STEPS ###
         
         instance_id = experiment_id +"/"+ db
-        output_dir = os.path.join(args.output_dir, instance_id)
+        output_dir = os.path.join(abs_output_dir_base, instance_id)
         result_json_path =os.path.join(output_dir, "elt/result.json")
 
         if not args.overwriting and os.path.exists(result_json_path):
@@ -360,10 +364,10 @@ def test(
         os.makedirs(output_dir, exist_ok=True)
         
         # Copy all the input files to output dir
-        os.system(f"cp -r {os.path.join(args.test_path, db)}/* {output_dir}/")
+        os.system(f"cp -r {os.path.join(abs_test_path, db)}/* {output_dir}/")
 
-        # Ensure /workspace points to our current run directory
-        workspace_path = os.path.abspath("workspace")
+        # Ensure /workspace points to our current run directory (compute from original_cwd)
+        workspace_path = os.path.join(original_cwd, "workspace")
 
         # Remove old
         if os.path.islink(workspace_path) or os.path.exists(workspace_path):
@@ -382,56 +386,56 @@ def test(
         
         ### AGENT ORCHESTRATION STEPS ###
 
-        ##############################################################
-        #                  Query Plan Spider Agent                  #
-        ##############################################################
+        # ##############################################################
+        # #                  Query Plan Spider Agent                  #
+        # ##############################################################
         
-        # Generate Query Plan
-        logger.info("Starting query plan spider for %s", instance_id)
-        query_plan_spider_agent = make_agent("query_plan_spider", args.model, args)
-        run_spider(query_plan_spider_agent, post_processor, output_dir)
-        logger.info("Query plan spider finished for %s", instance_id)
+        # # Generate Query Plan
+        # logger.info("Starting query plan spider for %s", instance_id)
+        # query_plan_spider_agent = make_agent("query_plan_spider", args.model, args)
+        # run_spider(query_plan_spider_agent, post_processor, output_dir)
+        # logger.info("Query plan spider finished for %s", instance_id)
 
-        ##############################################################
-        #                      SQL Spider Agent                      #
-        ##############################################################
+        # ##############################################################
+        # #                      SQL Spider Agent                      #
+        # ##############################################################
         
-        # Generate SQL Queries
-        logger.info("Starting SQL spider for %s", instance_id)
-        sql_spider_agent = make_agent("sql_spider", args.model, args)
-        run_spider(sql_spider_agent, post_processor, output_dir)
-        logger.info("SQL spider finished for %s", instance_id)
+        # # Generate SQL Queries
+        # logger.info("Starting SQL spider for %s", instance_id)
+        # sql_spider_agent = make_agent("sql_spider", args.model, args)
+        # run_spider(sql_spider_agent, post_processor, output_dir)
+        # logger.info("SQL spider finished for %s", instance_id)
         
-        logger.info("Finished %s", instance_id)
+        # logger.info("Finished %s", instance_id)
 
 
-        ##################################################
-        #                   DBT agent                    #
-        ##################################################
+        # ##################################################
+        # #                   DBT agent                    #
+        # ##################################################
 
-        # Generate DBT configuration files
-        logger.info("Starting DBT agent for %s", instance_id)
-        dbt_spider = make_agent("dbt_spider", args.model, args)
-        run_spider(dbt_spider, post_processor, output_dir)
-        logger.info("DBT agent finished for %s", instance_id) 
+        # # Generate DBT configuration files
+        # logger.info("Starting DBT agent for %s", instance_id)
+        # dbt_spider = make_agent("dbt_spider", args.model, args)
+        # run_spider(dbt_spider, post_processor, output_dir)
+        # logger.info("DBT agent finished for %s", instance_id) 
 
-        ##################################################
-        #         ELT Execution Correction Loop          #
-        ##################################################
-        success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
+        # ##################################################
+        # #         ELT Execution Correction Loop          #
+        # ##################################################
+        # success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
 
 
-        ##################################################
-        #          SEMANTIC VERIFICATION LOOP            #
-        ##################################################
-        if success:
-            semantic_verification_loop(args, post_processor, output_dir, args.max_retries, instance_id)
+        # ##################################################
+        # #          SEMANTIC VERIFICATION LOOP            #
+        # ##################################################
+        # if success:
+        #     semantic_verification_loop(args, post_processor, output_dir, args.max_retries, instance_id)
 
-        logger.info("Finished %s", instance_id)
+        # logger.info("Finished %s", instance_id)
         
-        # Return to original directory for next iteration
-        os.chdir(original_cwd)
-        logger.info("Returned to original working directory: %s", original_cwd)
+        # # Return to original directory for next iteration
+        # os.chdir(original_cwd)
+        # logger.info("Returned to original working directory: %s", original_cwd)
 
 
 
