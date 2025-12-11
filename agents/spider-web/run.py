@@ -384,58 +384,58 @@ def test(
         #Initialize PostProcessor
         post_processor = PostProcessor(wrk_dir=output_dir)
         
-        ### AGENT ORCHESTRATION STEPS ###
+        ## AGENT ORCHESTRATION STEPS ###
 
-        # ##############################################################
-        # #                  Query Plan Spider Agent                  #
-        # ##############################################################
+        ##############################################################
+        #                  Query Plan Spider Agent                  #
+        ##############################################################
         
-        # # Generate Query Plan
-        # logger.info("Starting query plan spider for %s", instance_id)
-        # query_plan_spider_agent = make_agent("query_plan_spider", args.model, args)
-        # run_spider(query_plan_spider_agent, post_processor, output_dir)
-        # logger.info("Query plan spider finished for %s", instance_id)
+        # Generate Query Plan
+        logger.info("Starting query plan spider for %s", instance_id)
+        query_plan_spider_agent = make_agent("query_plan_spider", args.model, args)
+        run_spider(query_plan_spider_agent, post_processor, output_dir)
+        logger.info("Query plan spider finished for %s", instance_id)
 
-        # ##############################################################
-        # #                      SQL Spider Agent                      #
-        # ##############################################################
+        ##############################################################
+        #                      SQL Spider Agent                      #
+        ##############################################################
         
-        # # Generate SQL Queries
-        # logger.info("Starting SQL spider for %s", instance_id)
-        # sql_spider_agent = make_agent("sql_spider", args.model, args)
-        # run_spider(sql_spider_agent, post_processor, output_dir)
-        # logger.info("SQL spider finished for %s", instance_id)
+        # Generate SQL Queries
+        logger.info("Starting SQL spider for %s", instance_id)
+        sql_spider_agent = make_agent("sql_spider", args.model, args)
+        run_spider(sql_spider_agent, post_processor, output_dir)
+        logger.info("SQL spider finished for %s", instance_id)
         
-        # logger.info("Finished %s", instance_id)
+        logger.info("Finished %s", instance_id)
 
 
-        # ##################################################
-        # #                   DBT agent                    #
-        # ##################################################
+        ##################################################
+        #                   DBT agent                    #
+        ##################################################
 
-        # # Generate DBT configuration files
-        # logger.info("Starting DBT agent for %s", instance_id)
-        # dbt_spider = make_agent("dbt_spider", args.model, args)
-        # run_spider(dbt_spider, post_processor, output_dir)
-        # logger.info("DBT agent finished for %s", instance_id) 
+        # Generate DBT configuration files
+        logger.info("Starting DBT agent for %s", instance_id)
+        dbt_spider = make_agent("dbt_spider", args.model, args)
+        run_spider(dbt_spider, post_processor, output_dir)
+        logger.info("DBT agent finished for %s", instance_id) 
 
-        # ##################################################
-        # #         ELT Execution Correction Loop          #
-        # ##################################################
-        # success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
+        ##################################################
+        #         ELT Execution Correction Loop          #
+        ##################################################
+        success = dbt_correction_loop(args, post_processor, output_dir, args.max_retries, instance_id)
 
 
-        # ##################################################
-        # #          SEMANTIC VERIFICATION LOOP            #
-        # ##################################################
-        # if success:
-        #     semantic_verification_loop(args, post_processor, output_dir, args.max_retries, instance_id)
+        ##################################################
+        #          SEMANTIC VERIFICATION LOOP            #
+        ##################################################
+        if success:
+            semantic_verification_loop(args, post_processor, output_dir, args.max_retries, instance_id)
 
-        # logger.info("Finished %s", instance_id)
+        logger.info("Finished %s", instance_id)
         
-        # # Return to original directory for next iteration
-        # os.chdir(original_cwd)
-        # logger.info("Returned to original working directory: %s", original_cwd)
+        # Return to original directory for next iteration
+        os.chdir(original_cwd)
+        logger.info("Returned to original working directory: %s", original_cwd)
 
 
 
