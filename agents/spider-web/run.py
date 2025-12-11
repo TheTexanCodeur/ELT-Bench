@@ -327,6 +327,9 @@ def test(
     databases = filter_databases(databases, args.example_index)
     logger.info(f"Processing {len(databases)} databases: {databases}")
 
+    # Save original working directory to return to it after each iteration
+    original_cwd = os.getcwd()
+    
     for db in databases:
         
         ### INITIALIZATION STEPS ###
@@ -425,6 +428,10 @@ def test(
             semantic_verification_loop(args, post_processor, output_dir, args.max_retries, instance_id)
 
         logger.info("Finished %s", instance_id)
+        
+        # Return to original directory for next iteration
+        os.chdir(original_cwd)
+        logger.info("Returned to original working directory: %s", original_cwd)
 
 
 
