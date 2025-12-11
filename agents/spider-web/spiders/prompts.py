@@ -99,8 +99,8 @@ Node2=Filter(condition=[is_deleted = false], input=Node1)
 Node3=Scan(table=raw.orders)
 Node4=Join(type=inner, on=[Node2.customer_id = Node3.customer_id], left=Node2, right=Node3)
 Node5=Aggregate(group_by=[customer_id], metrics=[SUM(amount) AS total_amount], input=Node4)
-Node0=Project(columns=[customer_id, total_amount], input=Node5)
-ROOT=Node0
+Node6=Project(columns=[customer_id, total_amount], input=Node5)
+ROOT=Node6
 END_MODEL
 
 ############################
