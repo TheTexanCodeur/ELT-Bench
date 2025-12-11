@@ -71,7 +71,6 @@ def filter_databases(databases, example_index):
 
 
 def evaluate_stage1(folder, example_index, snowflake_config):
-  log_file = f'../data/results/{folder}/results.log'
   with open('./table.json', 'r') as f:
       table_list = json.load(f)
 
@@ -83,6 +82,14 @@ def evaluate_stage1(folder, example_index, snowflake_config):
   databases = filter_databases(databases, example_index)
 
   for db in databases:
+      # Create per-database log directory and file
+      db_log_dir = f'../data/results/{folder}/eval_{db}'
+      os.makedirs(db_log_dir, exist_ok=True)
+      log_file = f'{db_log_dir}/stage1.log'
+      
+      # Clear existing log file for this database (write mode 'w' instead of append 'a')
+      with open(log_file, 'w') as f:
+          f.write(f"=== Stage 1 Evaluation for {db} ===\n")
       success_tables = []
       incorrect_size_tables = []
       not_found_tables = []
