@@ -115,6 +115,7 @@ def test_no_ground_truth_leakage():
     
     leaks = []
     checked = 0
+    skipped = []
     
     for data_model_path in sorted(data_model_files):
         with open(data_model_path, 'r', encoding='utf-8') as f:
@@ -137,9 +138,14 @@ def test_no_ground_truth_leakage():
             
             example_row = model['example_row']
             
-            # Read ground truth CSV
+            # Read ground truth CSV (try both lowercase and capitalized)
             gt_csv = os.path.join(db_gt_path, f"{model_name}.csv")
             if not os.path.exists(gt_csv):
+                # Try capitalized version
+                gt_csv = os.path.join(db_gt_path, f"{model_name.capitalize()}.csv")
+            
+            if not os.path.exists(gt_csv):
+                skipped.append(f"{db_name}/{model_name}")
                 continue
             
             checked += 1
@@ -163,6 +169,11 @@ def test_no_ground_truth_leakage():
                 pass
     
     print(f"Checked {checked} models against ground truth")
+    
+    if skipped:
+        print(f"Skipped {len(skipped)} models (no ground truth CSV found):")
+        for skip in skipped:
+            print(f"  - {skip}")
     
     if leaks:
         print(f"\n⚠️ Data leakage detected ({len(leaks)}):")
