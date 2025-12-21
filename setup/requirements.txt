@@ -3,3 +3,5 @@ gdown
 pymongo
 snowflake
 pandas
+openai
+pyyaml

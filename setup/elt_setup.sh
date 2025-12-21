@@ -31,3 +31,15 @@ cd ../setup
 
 #Write the snowflake config in the material initialy given to the agent
 python3 write_config.py
+#Generate synthetic example rows for each data model (requires OPENAI_API_KEY)
+# load the OPENAI_API_KEY from .env file if it exists
+if [ -f ../.env ]; then
+  export $(grep -v '^#' ../.env | xargs)
+fi
+if [ -n "$OPENAI_API_KEY" ]; then
+  echo "Generating synthetic examples..."
+  python3 generate_synthetic_examples.py
+else
+  echo "Warning: OPENAI_API_KEY not set. Skipping synthetic example generation."
+  echo "To generate synthetic examples later, run: python3 generate_synthetic_examples.py"
+fi
