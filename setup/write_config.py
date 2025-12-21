@@ -143,7 +143,3 @@ for db in databases:
 
   # EL stage files removed - agents only handle transformation now
   # Previously copied: documentation/, check_job_status.py, elt/main.tf
-
-print("\nConfiguration files created successfully!")
-print("Run 'python3 generate_synthetic_examples.py' next to add example rows to data models.")
-  # Previously copied: documentation/, check_job_status.py, elt/main.tf
