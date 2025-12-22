@@ -48,6 +48,7 @@ def uppercase_data_model_yaml(yaml_file_path):
     """
     Convert all model names and column names in data_model.yaml to uppercase
     to match Snowflake case conventions.
+    Preserves all other fields including example rows.
     """
     if not os.path.exists(yaml_file_path):
         return
@@ -62,11 +63,13 @@ def uppercase_data_model_yaml(yaml_file_path):
                 if 'name' in model:
                     model['name'] = model['name'].upper()
                 
-                # Convert column names to uppercase
+                # Convert column names to uppercase (preserves all other column fields)
                 if 'columns' in model:
                     for column in model['columns']:
                         if 'name' in column:
                             column['name'] = column['name'].upper()
+                
+                # Note: All other fields in model (like 'example') are preserved automatically
         
         # Write back to file with proper encoding
         with open(yaml_file_path, 'w', encoding='utf-8') as f:
@@ -100,15 +103,13 @@ def uppercase_config_yaml(yaml_file_path):
         print(f"Error processing {yaml_file_path}: {e}")
         
 
-databases = [f.name for f in os.scandir('../elt-bench') if f.is_dir()]
+databases = [f.name for f in os.scandir('../data/inputs') if f.is_dir()]
 databases.sort()
 
 for db in databases:
-  os.makedirs('../data/inputs',exist_ok=True)
   directory_path = f'../data/inputs/{db}'
-  if os.path.exists(directory_path) and os.path.isdir(directory_path):
-        shutil.rmtree(directory_path)
-  os.system(f"cp -r ../elt-bench/{db} ../data/inputs")
+  # Work with existing data/inputs files (preserves example rows)
+  # No copying from elt-bench - assumes data/inputs already has the files
   
   # Convert CSV files and columns to uppercase
   uppercase_csv_files(directory_path)
