@@ -52,10 +52,13 @@ def delete_files_in_folder(folder_path):
         files = os.listdir(folder_path)
         for file in files:
             file_path = os.path.join(folder_path, file)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except PermissionError as e:
+                print(f"Warning: Permission denied when deleting {file_path}. Run 'sudo chown -R $USER:$USER {folder_path}' to fix permissions.")
         
 def create_folder_if_not_exists(path):
     if not os.path.exists(path):
