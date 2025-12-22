@@ -32,8 +32,8 @@ def read_json(file_path):
 
 
 def load_flat_files(db_name):
-    folder_path = f"../../elt-bench/{db_name}"
-    config_path = os.path.join(folder_path, "config.yaml")
+    folder_path = repo_root / "elt-bench" / db_name
+    config_path = folder_path / "config.yaml"
     
     # Read config file
     with open(config_path, 'r') as f:
@@ -46,7 +46,7 @@ def load_flat_files(db_name):
         return
     
     # Create data directory if it doesn't exist
-    data_dir = os.path.join(folder_path, "data")
+    data_dir = folder_path / "data"
     os.makedirs(data_dir, exist_ok=True)
     
     for file_config in flat_files:
@@ -59,7 +59,7 @@ def load_flat_files(db_name):
         print(f"{'='*60}", flush=True)
         
         # Download file
-        local_file = os.path.join(data_dir, f"{table_name}.{file_format}")
+        local_file = data_dir / f"{table_name}.{file_format}"
         print(f"Downloading from {file_url}...", flush=True)
         
         response = requests.get(file_url, stream=True)
@@ -76,7 +76,7 @@ def load_flat_files(db_name):
     for file in os.listdir(data_dir):
         
         # Build the path
-        file_path = base_path / "elt-bench" / db_name / "data" / file
+        file_path = repo_root / "elt-bench" / db_name / "data" / file
 
         # Normalize Unicode (so é is handled correctly)
         normalized_path = unicodedata.normalize("NFC", str(file_path.resolve()))
@@ -125,20 +125,20 @@ def load_flat_files(db_name):
     
     shutil.rmtree(data_dir)
 
-file_path = '../../setup/destination/snowflake_credential.json' 
+file_path = repo_root / 'setup' / 'destination' / 'snowflake_credential.json'
 snowflake_config = read_json(file_path)   
 
 conn = snowflake.connector.connect(**snowflake_config) 
     
 file_type_dict = {"csv": "CSV_TYPE", "jsonl": "JSON_TYPE", "parquet": "PARQUET_TYPE"}
 
-names = sorted(os.listdir("../../elt-bench"))
+names = sorted(os.listdir(repo_root / "elt-bench"))
 
 start, end = select_tables(args.example_index)
 
 for folder_name in names[start:end]:
         
-    folder_path = f"../../data/source/db/data/{folder_name}"
+    folder_path = repo_root / "data" / "source" / "db" / "data" / folder_name
     
     conn.cursor().execute(f"DROP DATABASE IF EXISTS {folder_name}")
 
@@ -161,13 +161,13 @@ for folder_name in names[start:end]:
     
     load_flat_files(folder_name)
     
-    if os.path.isdir(folder_path):
+    if folder_path.is_dir():
 
         #DB data
         for file in os.listdir(folder_path):
             
             # Build the path dynamically
-            file_path = base_path / "data" / "source" / "db" / "data" / folder_name / file
+            file_path = repo_root / "data" / "source" / "db" / "data" / folder_name / file
             
             # Normalize the entire path (base + subfolders + filename)
             normalized_path = unicodedata.normalize("NFC", str(file_path))
@@ -216,15 +216,15 @@ for folder_name in names[start:end]:
             
             print(f"Finished loading file {file_name}", flush=True)
         
-    folder_path = f"../../data/source/api/data/{folder_name}"
+    folder_path = repo_root / "data" / "source" / "api" / "data" / folder_name
     
-    if os.path.isdir(folder_path):
+    if folder_path.is_dir():
         
         #API Data
         for file in os.listdir(folder_path):
             
             # Build the path dynamically
-            file_path = base_path / "data" / "source" / "api" / "data" /folder_name / file
+            file_path = repo_root / "data" / "source" / "api" / "data" / folder_name / file
 
             
             # Normalize the entire path (base + subfolders + filename)
