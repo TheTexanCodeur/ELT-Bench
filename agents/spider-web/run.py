@@ -164,6 +164,13 @@ def dbt_correction_loop(args, post_processor, output_dir, max_retries, instance_
 
     while attempt <= max_attempts:
         logger.info("Starting ELT execution (attempt %d) for %s", attempt, instance_id)
+        
+        # Remove the previous dbt logs in the output directory
+        dbt_log_path = os.path.join(output_dir, "logs/dbt.log")
+        if os.path.exists(dbt_log_path):
+            os.remove(dbt_log_path)
+            logger.info("Removed previous dbt log at %s", dbt_log_path)
+        
         exit_code = os.system("dbt run")
         success = (exit_code == 0)
 

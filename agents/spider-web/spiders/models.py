@@ -21,7 +21,7 @@ from fireworks.client import Fireworks
 
 load_dotenv()  # reads .env
 
-logger = logging.getLogger("spider_agent")
+logger = logging.getLogger("spider_web")
 
 model_cost = {
     "gpt-5": {"prompt_tokens_cost": 1.25 / 1000000, "completion_tokens_cost": 10 / 1000000, "cached": 0.13 / 1000000},
@@ -43,7 +43,7 @@ def call_llm(payload):
   stop = ["Observation:", "\n\n\n\n", "\n \n \n"]
   cost = 0
   
-  if model.startswith("gpt-oss-120b") or model.startswith("qwen") or model.startswith("deepseek"):
+  if model.startswith("gpt-oss-120b") or model.startswith("qwen") or model.startswith("deepseek") or model.startswith("minimax-m2"):
     headers = {
         "Content-Type": "application/json"
     }
@@ -59,8 +59,10 @@ def call_llm(payload):
       
         output_message = response.json()['choices'][0]['message']['content']
         prompt_tokens = response.json()['usage']['prompt_tokens']
+        completion_tokens = response.json()['usage']['completion_tokens']
+        total_tokens = prompt_tokens + completion_tokens
         logger.info("Input tokens: %d; Output tokens: %d",
-                    prompt_tokens, response.json()['usage']['completion_tokens'])
+                    prompt_tokens, completion_tokens)
         return True, output_message, 0
       
       except Exception as e:

@@ -12,7 +12,7 @@ from spiders.sql_template import LOCAL_SQL_TEMPLATE, BQ_GET_TABLES_TEMPLATE, BQ_
 from spiders.sql_template import SF_EXEC_SQL_QUERY_TEMPLATE, SF_GET_TABLE_INFO_TEMPLATE, SF_GET_TABLES_TEMPLATE, SF_SAMPLE_ROWS_TEMPLATE
 from spiders.action import Action, Bash, Terminate, CreateFile, EditFile, LOCAL_DB_SQL, BIGQUERY_EXEC_SQL, SNOWFLAKE_EXEC_SQL, BQ_GET_TABLES, BQ_GET_TABLE_INFO, BQ_SAMPLE_ROWS, SF_GET_TABLES, SF_GET_TABLE_INFO, SF_SAMPLE_ROWS
 from spiders.utils import *
-logger = logging.getLogger("spider_agent.pycontroller")
+logger = logging.getLogger("spider-web")
 
 
 #  Constants 
