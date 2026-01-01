@@ -42,7 +42,7 @@ correction_plan_spider:
 
     Follow the system prompt rules strictly.
 
-  max_steps: 10
+  max_steps: 25
 
 correction_spider:
   instruction: |
@@ -62,7 +62,7 @@ correction_spider:
     - Never create new files, rename files, or invent schemas or fields.
 
     Follow the system prompt strictly.
-  max_steps: 15
+  max_steps: 20
 
 
 verification_spider:
@@ -106,4 +106,4 @@ semantic_correction_plan_spider:
       - Never create new schemas, tables, directories, or filenames
       Follow the system prompt rules strictly.
 
-  max_steps: 15
+  max_steps: 20
