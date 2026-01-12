@@ -18,7 +18,7 @@ parser.add_argument("--folder", type=str, required=True, help='Specify the folde
 parser.add_argument("--example_index", "-i", type=str, default="all", help="index range of the examples to run, e.g., '0-10', '2,3', 'all'")
 args = parser.parse_args()
 
-def check_corretness(df_gt, df):
+def check_corretness(df_gt, df, log_file):
 
     matched_cols = []
     unmatched_cols = []
@@ -50,7 +50,7 @@ def check_corretness(df_gt, df):
         else:
             missed_cols.append(gold_col)
 
-    with open(f'../data/results/{args.folder}/stage2.log', 'a') as f:
+    with open(log_file, 'a') as f:
         f.write(f"Matched columns: {matched_cols}\n")
         f.write(f"Unmatched columns: {unmatched_cols}\n")
         f.write(f"Missed: {missed_cols}\n\n\n")
@@ -90,13 +90,21 @@ def evaluate_stage2(folder, example_index, snowflake_config):
     databases = filter_databases(databases, example_index)
                     
     for db in databases:
-        tables = [f.name for f in os.scandir(f'./{db}') if f.is_file() and f.name.endswith('.sql')]
-        with open(f'../data/results/{folder}/stage2.log', 'a') as f:
+        # Create per-database log directory and file
+        db_log_dir = f'../data/results/{folder}/eval_{db}'
+        os.makedirs(db_log_dir, exist_ok=True)
+        log_file = f'{db_log_dir}/stage2.log'
+        
+        # Clear existing log file for this database (write mode 'w' instead of append 'a')
+        with open(log_file, 'w') as f:
+            f.write(f"=== Stage 2 Evaluation for {db} ===\n")
             f.write(f'Database: {db}\n')
+        
+        tables = [f.name for f in os.scandir(f'./{db}') if f.is_file() and f.name.endswith('.sql')]
             
         for table in tables:
             table = table.split('.')[0]
-            with open(f'../data/results/{folder}/stage2.log', 'a') as f:
+            with open(log_file, 'a') as f:
                 f.write(f'Table: {table}\n')
             try:
                 if not os.path.exists(f'../data/results/{folder}/{db}/{table}.csv'):       
@@ -109,7 +117,7 @@ def evaluate_stage2(folder, example_index, snowflake_config):
                     conn.close()
                 df = pd.read_csv(f'../data/results/{folder}/{db}/{table}.csv')
                 df_gt = pd.read_csv(f'../data/gt/{db}/{table}.csv')
-                check_corretness(df_gt, df)
+                check_corretness(df_gt, df, log_file)
             except Exception as e:
-                with open(f'../data/results/{folder}/stage2.log', 'a') as f:
+                with open(log_file, 'a') as f:
                     f.write(f'Error: {e}\n\n\n')
