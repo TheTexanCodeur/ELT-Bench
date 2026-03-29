@@ -107,6 +107,8 @@ END_MODEL
 # WORKFLOW
 ############################
 1. Analyze the target data models in ./data_model.yaml. Please make sure to read the entire files.
+   - Pay attention to the example_row field in each model - it shows the expected output format
+   - The example values are synthetic (not from ground truth) but demonstrate the correct structure
 2. Analyze source schemas in ./schemas/*.
 3. For each target model, produce a logical plan in the required format.
 4. Write or update query_plan.txt with the final consolidated plan.
@@ -217,11 +219,17 @@ You must reconstruct normal Snowflake SQL from the logical plan.
      HAVING ...
      ;
 
-8. **No temporary node names, no CTEs unless necessary.**
+8. **Column Disambiguation (CRITICAL)**
+   - ALWAYS use table aliases when joining multiple tables
+   - ALWAYS qualify column names with alias/table name in SELECT, WHERE, GROUP BY
+   - Example: SELECT t1.id, t1.name, t2.amount FROM table1 t1 JOIN table2 t2 ON t1.id = t2.id
+   - This prevents "ambiguous column name" errors
+
+9. **No temporary node names, no CTEs unless necessary.**
    - Only use CTEs when the plan structure makes them essential.
    - If used, CTE names must be descriptive, not NodeX.
 
-9. **Snowflake SQL conventions**
+10. **Snowflake SQL conventions**
    - Uppercase SQL keywords
    - snake_case for aliases
    - No trailing commas
@@ -237,15 +245,57 @@ For each task input, your response should contain:
 
 
 ###########################################################
+# TRANSLATION EXAMPLE
+###########################################################
+Given this logical plan:
+
+MODEL customer_summary
+Node1=Scan(table=raw.customers)
+Node2=Filter(condition=[status = 'active'], input=Node1)
+Node3=Scan(table=raw.orders)
+Node4=Join(type=inner, on=[Node2.customer_id = Node3.customer_id], left=Node2, right=Node3)
+Node5=Aggregate(group_by=[customer_id, customer_name], metrics=[COUNT(*) AS order_count, SUM(amount) AS total_amount], input=Node4)
+Node6=Project(columns=[customer_id, customer_name, order_count, total_amount], input=Node5)
+ROOT=Node6
+END_MODEL
+
+You should produce this SQL:
+
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    COUNT(*) AS order_count,
+    SUM(o.amount) AS total_amount
+FROM raw.customers c
+INNER JOIN raw.orders o 
+    ON c.customer_id = o.customer_id
+WHERE c.status = 'active'
+GROUP BY c.customer_id, c.customer_name;
+
+Note how:
+- Scan operations became FROM/JOIN clauses
+- Filter became WHERE clause
+- Join specified the join condition with aliases (c, o)
+- Aggregate defined SELECT with aggregations and GROUP BY
+- All columns are qualified with aliases (c.customer_id, o.amount)
+- No Node references appear in final SQL
+
+###########################################################
 # WORKFLOW
 ###########################################################
-1. Parse the logical query plan located in ./query_plan.txt.
+1. Read the logical query plan from ./query_plan.txt using Bash.
 2. For each MODEL block:
-     a. Determine node dependency order.
-     b. Reconstruct the SQL query using logical operations.
-     c. Write clean Snowflake SQL (no Node references).
-     d. Save query into ./sql/<model_name>.sql
-3. Do NOT include SQL for multiple models in the same file.
+     a. Identify the operations: Scan, Filter, Join, Aggregate, Project
+     b. Determine table aliases for each Scan operation
+     c. Build the SQL query directly:
+        - Start with SELECT (from Project/Aggregate)
+        - Add FROM clause (from first Scan)
+        - Add JOIN clauses (from Join operations)
+        - Add WHERE clause (from Filter operations)
+        - Add GROUP BY clause (from Aggregate operations)
+     d. Write SQL using CreateFile to ./sql/<model_name>.sql
+3. Do NOT write Python scripts to parse the plan - translate directly.
+4. Do NOT include SQL for multiple models in the same file.
 
 ############################
 # IMPORTANT
